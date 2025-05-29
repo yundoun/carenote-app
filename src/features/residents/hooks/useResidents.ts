@@ -108,18 +108,10 @@ export function useResidents() {
     );
   }, [residents]);
 
-  const todayScheduleCount = useMemo(() => {
-    return residents.reduce(
-      (total, resident) => total + resident.todaySchedule.length,
-      0
-    );
-  }, [residents]);
-
   return {
     residents,
     filteredResidents,
     urgentCases,
-    todayScheduleCount,
     searchQuery,
     setSearchQuery,
   };

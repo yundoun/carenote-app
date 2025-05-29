@@ -5,17 +5,13 @@ import {
   WeeklyGoal,
   WorkStatistics,
   EducationProgress,
-  Achievements,
   SettingsMenu,
   useMyPageData,
   MenuItem,
 } from '@/features/my';
 
 export function MyPage() {
-  const [showAchievements, setShowAchievements] = useState(false);
-
-  const { userProfile, workStats, achievements, menuItems, isLoading } =
-    useMyPageData();
+  const { userProfile, workStats, menuItems, isLoading } = useMyPageData();
 
   const handleEditProfile = () => {
     // 프로필 편집 로직 구현
@@ -63,12 +59,6 @@ export function MyPage() {
       <EducationProgress
         workStats={workStats}
         onContinueEducation={handleContinueEducation}
-      />
-
-      <Achievements
-        achievements={achievements}
-        showAll={showAchievements}
-        onToggleShowAll={() => setShowAchievements(!showAchievements)}
       />
 
       <SettingsMenu menuItems={menuItems} onMenuClick={handleMenuClick} />

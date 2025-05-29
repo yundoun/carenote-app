@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Calendar, User, FileText, Activity, Home, Users } from 'lucide-react';
 import { TabItem } from './TabItem';
+import { useBottomNavigation } from '@/hooks/useBottomNavigation';
 
 interface NavItem {
   label: string;
@@ -14,6 +15,7 @@ export function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('/');
+  const { shouldShowBottomNav } = useBottomNavigation();
 
   useEffect(() => {
     // Update active tab based on current path
@@ -25,6 +27,10 @@ export function Navigation() {
     else if (pathname.includes('/vitals')) setActiveTab('/vitals');
     else if (pathname.includes('/mypage')) setActiveTab('/mypage');
   }, [location.pathname]);
+
+  if (!shouldShowBottomNav) {
+    return null;
+  }
 
   const navItems: NavItem[] = [
     {
@@ -38,7 +44,7 @@ export function Navigation() {
       path: '/schedule',
     },
     {
-      label: '담당자',
+      label: '환자관리',
       icon: <Users className="h-5 w-5" />,
       path: '/residents',
     },
@@ -60,7 +66,13 @@ export function Navigation() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10" style={{ height: '72px' }}>
+    <nav 
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10 md:hidden" 
+      style={{ 
+        height: '72px',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+      }}
+    >
       <div className="flex justify-around items-center h-full px-1 py-2">
         {navItems.map((item) => (
           <TabItem

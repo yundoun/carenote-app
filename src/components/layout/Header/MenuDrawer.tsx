@@ -1,15 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import {
-  quickAccessMenuItems,
-  systemMenuItems,
-  getIcon,
-  useNavigation,
-} from '@/routes';
+import { systemMenuItems, getIcon, useNavigation } from '@/routes';
 
 interface MenuDrawerProps {
   isOpen: boolean;
@@ -36,27 +30,6 @@ export function MenuDrawer({ isOpen, onOpenChange }: MenuDrawerProps) {
       <SheetContent side="left" className="w-[300px] sm:w-[400px]">
         <div className="py-6">
           <h2 className="text-xl font-bold mb-6">케어노트 메뉴</h2>
-
-          {quickAccessMenuItems.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-3">
-                빠른 접근
-              </h3>
-              <nav className="space-y-2">
-                {quickAccessMenuItems.map((item, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => handleMenuClick(item.path)}>
-                    {getIcon(item.iconName)}
-                    <span className="ml-3">{item.label}</span>
-                  </Button>
-                ))}
-              </nav>
-            </div>
-          )}
-
           <div>
             <nav className="space-y-2">
               {systemMenuItems.map((item, index) => (

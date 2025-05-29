@@ -18,14 +18,6 @@ export interface WorkStats {
   weeklyCompleted: number;
 }
 
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  earnedDate: string;
-  icon: string;
-}
-
 export interface MenuItem {
   icon: React.ReactNode;
   label: string;

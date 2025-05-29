@@ -22,7 +22,6 @@ export default function ResidentsPage() {
     residents,
     filteredResidents,
     urgentCases,
-    todayScheduleCount,
     searchQuery,
     setSearchQuery,
   } = useResidents();
@@ -34,11 +33,11 @@ export default function ResidentsPage() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">담당 어르신</h1>
+        <h1 className="text-2xl font-bold">환자 관리</h1>
         <div className="text-right">
           <p className="text-sm text-gray-500">총 {residents.length}명</p>
           <p className="text-sm text-gray-500">
-            오늘 일정 {todayScheduleCount}건
+            주의 필요 {urgentCases.length}명
           </p>
         </div>
       </div>
@@ -57,7 +56,6 @@ export default function ResidentsPage() {
         residents={residents}
         filteredResidents={filteredResidents}
         urgentCases={urgentCases}
-        todayScheduleCount={todayScheduleCount}
         onResidentClick={handleResidentClick}
       />
 

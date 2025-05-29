@@ -20,18 +20,18 @@ export function QuickAccessGrid({ items }: QuickAccessGridProps) {
         <CardTitle className="text-lg">빠른 접근</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-3">
           {items.map((item, index) => (
             <Button
               key={index}
               variant="outline"
-              className="h-20 flex-col gap-2 hover:bg-gray-50"
+              className="h-20 md:h-16 lg:h-20 flex-col gap-2 hover:bg-gray-50"
               onClick={() => handleQuickAccess(item.path)}
             >
               <div className={`p-2 rounded-lg ${item.color}`}>
                 <item.icon className="h-6 w-6 text-white" />
               </div>
-              <span className="text-sm font-medium">{item.label}</span>
+              <span className="text-sm font-medium text-center leading-tight">{item.label}</span>
             </Button>
           ))}
         </div>
