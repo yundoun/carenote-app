@@ -90,10 +90,17 @@ export function useVitals() {
     return today === vitalDate;
   }).length;
   
+  // urgentCases 계산 - 주의가 필요한 시니어들
+  const urgentCases = vitals.seniors.filter(senior => 
+    senior.alerts.some(alert => !alert.acknowledged && alert.severity === 'high')
+  );
+
   return {
     // 상태
     ...vitals,
     filteredSeniors,
+    seniors: vitals.seniors,
+    urgentCases,
     
     // 통계
     urgentCount,

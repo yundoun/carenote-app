@@ -1,0 +1,1124 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 케어노트 앱 API 규격서
+
+## 1. 개요
+
+### 1.1 시스템 개요
+- **서비스명**: 케어노트 (CareNote)
+- **대상**: 요양보호사
+- **주요 기능**: 입주자 케어 관리, 교육자료 제공, 근무 관리
+- **API 버전**: v1.0
+- **기준일**: 2025-05-29
+
+### 1.2 API 기본 정보
+- **Base URL**: `https://api.carenote.com/v1`
+- **Protocol**: HTTPS
+- **Format**: JSON
+- **Encoding**: UTF-8
+- **Authentication**: Bearer Token (JWT)
+
+### 1.3 공통 규약
+
+#### HTTP 상태 코드
+- `200 OK`: 요청 성공
+- `201 Created`: 리소스 생성 성공
+- `400 Bad Request`: 잘못된 요청
+- `401 Unauthorized`: 인증 실패
+- `403 Forbidden`: 권한 없음
+- `404 Not Found`: 리소스 없음
+- `500 Internal Server Error`: 서버 오류
+
+#### 공통 응답 구조
+```json
+{
+  "code": "SUCCESS",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "timestamp": "2025-05-29T10:00:00Z",
+  "data": {
+    // 응답 데이터
+  }
+}
+```
+
+#### 에러 응답 구조
+```json
+{
+  "code": "ERROR_CODE",
+  "message": "에러 메시지",
+  "timestamp": "2025-05-29T10:00:00Z",
+  "errors": [
+    {
+      "field": "fieldName",
+      "message": "상세 에러 메시지"
+    }
+  ]
+}
+```
+
+## 2. 인증 API
+
+### 2.1 로그인
+```
+POST /auth/login
+```
+
+#### Request
+```json
+{
+  "username": "user123",
+  "password": "password123",
+  "deviceInfo": {
+    "deviceId": "device-uuid",
+    "platform": "android",
+    "appVersion": "1.0.0"
+  }
+}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "로그인 성공",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expiresIn": 3600,
+    "user": {
+      "id": "user-123",
+      "name": "홍길동",
+      "role": "CAREGIVER",
+      "department": "3층 A유닛"
+    }
+  }
+}
+```
+
+### 2.2 토큰 재발급
+```
+POST /auth/refresh
+```
+
+#### Request
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "토큰 재발급 성공",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expiresIn": 3600
+  }
+}
+```
+
+### 2.3 로그아웃
+```
+POST /auth/logout
+```
+
+#### Request Header
+```
+Authorization: Bearer {accessToken}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "로그아웃 성공",
+  "data": null
+}
+```
+
+## 3. 회원 관리 API
+
+### 3.1 회원가입
+```
+POST /users/signup
+```
+
+#### Request
+```json
+{
+  "username": "user123",
+  "password": "password123",
+  "name": "홍길동",
+  "phoneNumber": "010-1234-5678",
+  "employeeNumber": "EMP001",
+  "department": "3층 A유닛",
+  "agreements": {
+    "termsOfService": true,
+    "privacyPolicy": true,
+    "marketingConsent": false
+  }
+}
+```
+
+### 3.2 회원 정보 조회
+```
+GET /users/me
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "회원 정보 조회 성공",
+  "data": {
+    "id": "user-123",
+    "username": "user123",
+    "name": "홍길동",
+    "role": "CAREGIVER",
+    "employeeNumber": "EMP001",
+    "department": "3층 A유닛",
+    "phoneNumber": "010-1234-5678",
+    "profileImage": "https://cdn.carenote.com/profiles/user-123.jpg",
+    "joinDate": "2025-01-15",
+    "status": "ACTIVE"
+  }
+}
+```
+
+### 3.3 회원 탈퇴
+```
+DELETE /users/me
+```
+
+#### Request
+```json
+{
+  "reason": "개인 사유",
+  "password": "password123"
+}
+```
+
+## 4. 입주자 정보 API
+
+### 4.1 담당 입주자 목록 조회
+```
+GET /residents?caregiverId={userId}&page=1&size=20
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "입주자 목록 조회 성공",
+  "data": {
+    "content": [
+      {
+        "id": "resident-001",
+        "name": "김철수",
+        "age": 82,
+        "gender": "M",
+        "roomNumber": "301호",
+        "profileImage": "https://cdn.carenote.com/residents/001.jpg",
+        "careLevel": "LEVEL_3",
+        "mainDiagnosis": "치매",
+        "status": "ACTIVE"
+      }
+    ],
+    "page": {
+      "size": 20,
+      "number": 1,
+      "totalElements": 45,
+      "totalPages": 3
+    }
+  }
+}
+```
+
+### 4.2 입주자 상세 정보 조회
+```
+GET /residents/{residentId}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "입주자 상세 정보 조회 성공",
+  "data": {
+    "id": "resident-001",
+    "name": "김철수",
+    "age": 82,
+    "gender": "M",
+    "roomNumber": "301호",
+    "birthDate": "1943-05-15",
+    "profileImage": "https://cdn.carenote.com/residents/001.jpg",
+    "careLevel": "LEVEL_3",
+    "mainDiagnosis": "치매",
+    "subDiagnosis": ["고혈압", "당뇨"],
+    "familyInfo": {
+      "primaryContact": {
+        "name": "김영희",
+        "relationship": "딸",
+        "phoneNumber": "010-2345-6789"
+      }
+    },
+    "careNotes": [
+      "낙상 주의 필요",
+      "야간 배회 경향 있음",
+      "복약 거부 가능성"
+    ],
+    "careRequirements": [
+      "체위 변경 2시간마다",
+      "식사 보조 필요",
+      "인지 활동 프로그램 참여"
+    ],
+    "medications": [
+      {
+        "name": "도네페질",
+        "dosage": "5mg",
+        "frequency": "1일 1회",
+        "time": "아침 식후"
+      }
+    ]
+  }
+}
+```
+
+## 5. 교육자료 API
+
+### 5.1 교육자료 카테고리 조회
+```
+GET /education/categories
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "카테고리 조회 성공",
+  "data": [
+    {
+      "id": "cat-001",
+      "name": "주요업무",
+      "subcategories": ["요일별 업무", "일상업무", "시간대별 업무"]
+    },
+    {
+      "id": "cat-002",
+      "name": "케어기술",
+      "subcategories": ["체위변경", "식사보조", "목욕보조"]
+    },
+    {
+      "id": "cat-003",
+      "name": "기록지 입력방법",
+      "subcategories": ["간호기록", "투약기록", "활동기록"]
+    }
+  ]
+}
+```
+
+### 5.2 교육자료 검색
+```
+GET /education/materials?keyword={keyword}&category={categoryId}&page=1&size=20
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "교육자료 검색 성공",
+  "data": {
+    "content": [
+      {
+        "id": "edu-001",
+        "title": "체위변경 기본 방법",
+        "category": "케어기술",
+        "type": "VIDEO",
+        "duration": 600,
+        "thumbnail": "https://cdn.carenote.com/edu/thumb-001.jpg",
+        "tags": ["체위변경", "욕창예방"],
+        "viewCount": 1523,
+        "createdAt": "2025-03-15"
+      }
+    ],
+    "page": {
+      "size": 20,
+      "number": 1,
+      "totalElements": 150,
+      "totalPages": 8
+    }
+  }
+}
+```
+
+### 5.3 교육자료 상세 조회
+```
+GET /education/materials/{materialId}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "교육자료 상세 조회 성공",
+  "data": {
+    "id": "edu-001",
+    "title": "체위변경 기본 방법",
+    "category": "케어기술",
+    "type": "VIDEO",
+    "content": {
+      "url": "https://cdn.carenote.com/videos/edu-001.mp4",
+      "duration": 600,
+      "subtitles": "https://cdn.carenote.com/subtitles/edu-001.vtt"
+    },
+    "description": "체위변경의 기본 원칙과 방법을 설명합니다.",
+    "learningObjectives": [
+      "체위변경의 중요성 이해",
+      "올바른 체위변경 방법 습득",
+      "욕창 예방 방법 학습"
+    ],
+    "relatedMaterials": ["edu-002", "edu-003"],
+    "userProgress": {
+      "completed": false,
+      "lastPosition": 120,
+      "completionRate": 20
+    }
+  }
+}
+```
+
+### 5.4 학습 이력 저장
+```
+POST /education/materials/{materialId}/progress
+```
+
+#### Request
+```json
+{
+  "position": 300,
+  "duration": 600,
+  "completed": false,
+  "completionRate": 50
+}
+```
+
+## 6. 근무 관리 API
+
+### 6.1 근무표 조회
+```
+GET /schedules?date={date}&userId={userId}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "근무표 조회 성공",
+  "data": {
+    "date": "2025-05-29",
+    "schedules": [
+      {
+        "id": "sch-001",
+        "date": "2025-05-29",
+        "shift": "DAY",
+        "startTime": "07:00",
+        "endTime": "15:00",
+        "unit": "3층 A유닛",
+        "assignedResidents": ["resident-001", "resident-002"],
+        "status": "SCHEDULED"
+      },
+      {
+        "id": "sch-002",
+        "date": "2025-05-30",
+        "shift": "EVENING",
+        "startTime": "15:00",
+        "endTime": "23:00",
+        "unit": "3층 A유닛",
+        "assignedResidents": ["resident-001", "resident-002"],
+        "status": "SCHEDULED"
+      }
+    ]
+  }
+}
+```
+
+### 6.2 주간/월간 스케줄 조회
+```
+GET /schedules/calendar?type={week|month}&date={date}&userId={userId}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "스케줄 조회 성공",
+  "data": {
+    "period": {
+      "type": "WEEK",
+      "startDate": "2025-05-26",
+      "endDate": "2025-06-01"
+    },
+    "schedules": [
+      {
+        "date": "2025-05-29",
+        "shifts": [
+          {
+            "type": "DAY",
+            "startTime": "07:00",
+            "endTime": "15:00",
+            "unit": "3층 A유닛"
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "totalShifts": 5,
+      "dayShifts": 3,
+      "eveningShifts": 1,
+      "nightShifts": 1
+    }
+  }
+}
+```
+
+### 6.3 주요 업무 목록 조회
+```
+GET /tasks?type={daily|weekly|time-based}&date={date}&userId={userId}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "주요 업무 조회 성공",
+  "data": {
+    "tasks": [
+      {
+        "id": "task-001",
+        "title": "아침 투약",
+        "type": "MEDICATION",
+        "priority": "HIGH",
+        "scheduledTime": "08:00",
+        "residents": [
+          {
+            "id": "resident-001",
+            "name": "김철수",
+            "roomNumber": "301호"
+          }
+        ],
+        "status": "PENDING",
+        "description": "도네페질 5mg 투약",
+        "relatedEducation": ["edu-010"]
+      }
+    ],
+    "statistics": {
+      "total": 15,
+      "completed": 8,
+      "pending": 7,
+      "completionRate": 53.3
+    }
+  }
+}
+```
+
+### 6.4 업무 완료 보고
+```
+POST /tasks/{taskId}/complete
+```
+
+#### Request
+```json
+{
+  "completedAt": "2025-05-29T08:15:00Z",
+  "notes": "정상적으로 투약 완료",
+  "attachments": [
+    {
+      "type": "PHOTO",
+      "url": "https://cdn.carenote.com/tasks/photo-001.jpg"
+    }
+  ]
+}
+```
+
+## 7. 간호기록 API
+
+### 7.1 간호기록 저장
+```
+POST /care-records
+```
+
+#### Request
+```json
+{
+  "residentId": "resident-001",
+  "recordType": "DAILY_CARE",
+  "recordDate": "2025-05-29",
+  "vitalSigns": {
+    "bloodPressure": {
+      "systolic": 120,
+      "diastolic": 80
+    },
+    "pulse": 72,
+    "temperature": 36.5,
+    "respiration": 18
+  },
+  "careActivities": [
+    {
+      "type": "POSITION_CHANGE",
+      "time": "10:00",
+      "notes": "좌측와위로 체위 변경"
+    }
+  ],
+  "observations": "입주자 상태 양호, 특이사항 없음"
+}
+```
+
+### 7.2 간호기록 조회
+```
+GET /care-records?residentId={residentId}&startDate={date}&endDate={date}
+```
+
+## 8. 알림/Push API
+
+### 8.1 FCM 토큰 등록
+```
+POST /notifications/fcm-token
+```
+
+#### Request
+```json
+{
+  "token": "fcm-token-string",
+  "deviceId": "device-uuid",
+  "platform": "android"
+}
+```
+
+### 8.2 알림 목록 조회
+```
+GET /notifications?page=1&size=20
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "알림 목록 조회 성공",
+  "data": {
+    "content": [
+      {
+        "id": "notif-001",
+        "type": "TASK_REMINDER",
+        "title": "투약 시간 알림",
+        "message": "김철수님 아침 투약 시간입니다.",
+        "data": {
+          "taskId": "task-001",
+          "residentId": "resident-001"
+        },
+        "read": false,
+        "createdAt": "2025-05-29T07:55:00Z"
+      }
+    ],
+    "page": {
+      "size": 20,
+      "number": 1,
+      "totalElements": 45,
+      "totalPages": 3
+    }
+  }
+}
+```
+
+## 9. 바이탈 체크 API
+
+### 9.1 바이탈 체크 현황 모니터링
+```
+GET /vitals/status?unitId={unitId}&date={date}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "바이탈 체크 현황 조회 성공",
+  "data": {
+    "unit": "3층 A유닛",
+    "date": "2025-05-29",
+    "residents": [
+      {
+        "id": "resident-001",
+        "name": "김철수",
+        "roomNumber": "301호",
+        "vitalCheckStatus": {
+          "morning": {
+            "checked": true,
+            "time": "08:30",
+            "checkedBy": "홍길동"
+          },
+          "afternoon": {
+            "checked": false,
+            "scheduledTime": "14:00"
+          },
+          "evening": {
+            "checked": false,
+            "scheduledTime": "20:00"
+          }
+        },
+        "lastVitals": {
+          "bloodPressure": "120/80",
+          "pulse": 72,
+          "temperature": 36.5
+        }
+      }
+    ],
+    "summary": {
+      "totalResidents": 13,
+      "checkedCount": 8,
+      "pendingCount": 5,
+      "completionRate": 61.5
+    }
+  }
+}
+```
+
+### 9.2 바이탈 자동기록
+```
+POST /vitals/auto-record
+```
+
+#### Request
+```json
+{
+  "residentId": "resident-001",
+  "deviceId": "device-001",
+  "measurements": {
+    "bloodPressure": {
+      "systolic": 120,
+      "diastolic": 80,
+      "measuredAt": "2025-05-29T08:30:00Z"
+    },
+    "pulse": 72,
+    "temperature": 36.5,
+    "bloodOxygen": 98,
+    "bloodSugar": 110
+  },
+  "deviceType": "AUTO_BP_MONITOR"
+}
+```
+
+## 10. 인수인계 API
+
+### 10.1 인수인계 사항 작성
+```
+POST /handovers
+```
+
+#### Request
+```json
+{
+  "unitId": "unit-3a",
+  "fromShift": "DAY",
+  "toShift": "EVENING",
+  "date": "2025-05-29",
+  "items": [
+    {
+      "category": "RESIDENT_CARE",
+      "residentId": "resident-001",
+      "content": "김철수님 오전 식사 거부, 점심은 정상 섭취",
+      "priority": "HIGH",
+      "actionRequired": true
+    },
+    {
+      "category": "GENERAL",
+      "content": "3층 A유닛 에어컨 고장, 수리 요청함",
+      "priority": "MEDIUM"
+    }
+  ],
+  "attachments": [
+    {
+      "type": "IMAGE",
+      "url": "https://cdn.carenote.com/handover/img-001.jpg"
+    }
+  ]
+}
+```
+
+### 10.2 인수인계 사항 조회
+```
+GET /handovers?unitId={unitId}&date={date}&shift={shift}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "인수인계 사항 조회 성공",
+  "data": {
+    "handovers": [
+      {
+        "id": "handover-001",
+        "unitId": "unit-3a",
+        "date": "2025-05-29",
+        "fromShift": "NIGHT",
+        "toShift": "DAY",
+        "createdBy": "박간호사",
+        "createdAt": "2025-05-29T07:00:00Z",
+        "items": [
+          {
+            "id": "item-001",
+            "category": "RESIDENT_CARE",
+            "residentId": "resident-001",
+            "residentName": "김철수",
+            "content": "야간 배회 2회, 수면제 투약 후 안정",
+            "priority": "HIGH",
+            "actionRequired": true,
+            "completed": false
+          }
+        ],
+        "readStatus": {
+          "totalRecipients": 3,
+          "readCount": 2,
+          "readers": ["홍길동", "이요양사"]
+        }
+      }
+    ]
+  }
+}
+```
+
+## 11. 공지사항 API
+
+### 11.1 공지사항 목록 조회
+```
+GET /notices?type={all|headquarters|facility}&page=1&size=20
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "공지사항 조회 성공",
+  "data": {
+    "content": [
+      {
+        "id": "notice-001",
+        "type": "HEADQUARTERS",
+        "category": "POLICY",
+        "title": "요양보호사 근무 지침 개정 안내",
+        "content": "2025년 6월 1일부터 새로운 근무 지침이 적용됩니다...",
+        "author": "본사 인사팀",
+        "important": true,
+        "attachments": [
+          {
+            "name": "근무지침_개정안.pdf",
+            "url": "https://cdn.carenote.com/notices/doc-001.pdf"
+          }
+        ],
+        "createdAt": "2025-05-25T09:00:00Z",
+        "readCount": 145,
+        "targetFacilities": ["all"]
+      }
+    ],
+    "page": {
+      "size": 20,
+      "number": 1,
+      "totalElements": 89,
+      "totalPages": 5
+    }
+  }
+}
+```
+
+### 11.2 공지사항 읽음 처리
+```
+POST /notices/{noticeId}/read
+```
+
+## 12. 요양보호사 근무 위치 API
+
+### 12.1 근무 위치 확인
+```
+GET /work-locations/current?userId={userId}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "근무 위치 조회 성공",
+  "data": {
+    "userId": "user-123",
+    "name": "홍길동",
+    "currentLocation": {
+      "floor": 3,
+      "unit": "A",
+      "unitName": "3층 A유닛",
+      "roomNumbers": ["301", "302", "303", "304", "305", "306"],
+      "residentCount": 13
+    },
+    "shift": {
+      "type": "DAY",
+      "startTime": "07:00",
+      "endTime": "15:00"
+    },
+    "checkedInAt": "2025-05-29T06:55:00Z"
+  }
+}
+```
+
+### 12.2 출퇴근 체크인/아웃
+```
+POST /work-locations/check-in
+```
+
+#### Request
+```json
+{
+  "action": "CHECK_IN",
+  "location": {
+    "latitude": 37.123456,
+    "longitude": 127.123456
+  },
+  "unitId": "unit-3a"
+}
+```
+
+## 13. 케어 일정 관리 API
+
+### 13.1 복약 기록 저장
+```
+POST /care-schedules/medication
+```
+
+#### Request
+```json
+{
+  "residentId": "resident-001",
+  "medications": [
+    {
+      "name": "도네페질",
+      "dosage": "5mg",
+      "scheduledTime": "08:00",
+      "actualTime": "08:15",
+      "status": "COMPLETED",
+      "notes": "정상 복용"
+    }
+  ],
+  "recordedBy": "user-123"
+}
+```
+
+### 13.2 체위변경 기록
+```
+POST /care-schedules/position-change
+```
+
+#### Request
+```json
+{
+  "residentId": "resident-001",
+  "changeTime": "2025-05-29T10:00:00Z",
+  "fromPosition": "SUPINE",
+  "toPosition": "LEFT_LATERAL",
+  "skinCondition": "NORMAL",
+  "notes": "욕창 예방을 위한 정기 체위변경"
+}
+```
+
+### 13.3 병원/외출 일정 조회
+```
+GET /care-schedules/appointments?residentId={residentId}&startDate={date}&endDate={date}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "일정 조회 성공",
+  "data": {
+    "appointments": [
+      {
+        "id": "appt-001",
+        "residentId": "resident-001",
+        "residentName": "김철수",
+        "type": "HOSPITAL",
+        "hospital": "서울대병원",
+        "department": "신경과",
+        "scheduledDate": "2025-05-30",
+        "scheduledTime": "14:00",
+        "purpose": "정기 진료",
+        "accompaniedBy": "김영희(딸)",
+        "transportation": "가족 차량",
+        "notes": "MRI 검사 예정"
+      },
+      {
+        "id": "appt-002",
+        "type": "FAMILY_VISIT",
+        "scheduledDate": "2025-05-31",
+        "scheduledTime": "15:00",
+        "visitors": ["김영희(딸)", "김민수(손자)"],
+        "location": "1층 면회실",
+        "duration": 60
+      }
+    ]
+  }
+}
+```
+
+## 14. 환대 메시지 API
+
+### 14.1 환대 메시지 조회
+```
+GET /welcome-messages?userId={userId}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "환대 메시지 조회 성공",
+  "data": {
+    "message": "안녕하세요, 홍길동님! 오늘도 좋은 하루 되세요.",
+    "type": "DAILY_GREETING",
+    "additionalInfo": {
+      "todayShift": "주간 근무",
+      "assignedResidents": 6,
+      "pendingTasks": 3
+    },
+    "motivationalQuote": "작은 배려가 큰 행복을 만듭니다."
+  }
+}
+```
+
+## 15. 앱 버전 관리 API
+
+### 9.1 앱 업데이트 확인
+```
+GET /app/version-check?platform={android|ios}&currentVersion={version}
+```
+
+#### Response
+```json
+{
+  "code": "SUCCESS",
+  "message": "버전 확인 성공",
+  "data": {
+    "currentVersion": "1.0.0",
+    "latestVersion": "1.1.0",
+    "minimumVersion": "1.0.0",
+    "updateRequired": false,
+    "updateRecommended": true,
+    "updateUrl": "https://play.google.com/store/apps/details?id=com.carenote.app",
+    "releaseNotes": [
+      "근무표 UI 개선",
+      "버그 수정 및 성능 개선"
+    ]
+  }
+}
+```
+
+## 10. 시스템 연동 API
+
+### 10.1 엔젤시스템 데이터 동기화
+```
+POST /sync/angel-system
+```
+
+#### Request
+```json
+{
+  "syncType": "FULL",
+  "lastSyncTime": "2025-05-28T23:59:59Z"
+}
+```
+
+### 10.2 외부 시스템 인증
+```
+POST /external/auth
+```
+
+#### Request
+```json
+{
+  "system": "ANGEL_SYSTEM",
+  "credentials": {
+    "username": "carenote_api",
+    "apiKey": "api-key-string"
+  }
+}
+```
+
+## 11. 보안 및 인증 정책
+
+### 11.1 JWT 토큰 구조
+```json
+{
+  "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "sub": "user-123",
+    "name": "홍길동",
+    "role": "CAREGIVER",
+    "exp": 1622505600,
+    "iat": 1622502000
+  }
+}
+```
+
+### 11.2 API 요청 제한
+- Rate Limiting: 분당 100회
+- 동시 접속 제한: 디바이스당 1개 세션
+- 토큰 만료 시간: Access Token 1시간, Refresh Token 30일
+
+### 11.3 데이터 암호화
+- 통신: TLS 1.2 이상
+- 민감정보: AES-256 암호화
+- 비밀번호: bcrypt 해싱
+
+## 12. 에러 코드 정의
+
+| 코드 | 설명 | HTTP Status |
+|------|------|-------------|
+| AUTH_001 | 인증 실패 | 401 |
+| AUTH_002 | 토큰 만료 | 401 |
+| AUTH_003 | 권한 없음 | 403 |
+| USER_001 | 사용자 없음 | 404 |
+| USER_002 | 중복된 사용자 | 409 |
+| TASK_001 | 업무 없음 | 404 |
+| TASK_002 | 이미 완료된 업무 | 400 |
+| SYSTEM_001 | 서버 오류 | 500 |
+| SYSTEM_002 | 외부 시스템 연동 오류 | 503 |
+
+## 13. 부록
+
+### 13.1 데이터 타입 정의
+
+#### UserRole
+- `CAREGIVER`: 요양보호사
+- `NURSE`: 간호사
+- `ADMIN`: 관리자
+
+#### ShiftType
+- `DAY`: 주간 (07:00-15:00)
+- `EVENING`: 저녁 (15:00-23:00)
+- `NIGHT`: 야간 (23:00-07:00)
+
+#### TaskStatus
+- `PENDING`: 대기중
+- `IN_PROGRESS`: 진행중
+- `COMPLETED`: 완료
+- `CANCELLED`: 취소됨
+
+#### CareLevel
+- `LEVEL_1`: 1등급 (최중증)
+- `LEVEL_2`: 2등급 (중증)
+- `LEVEL_3`: 3등급 (중등증)
+- `LEVEL_4`: 4등급 (경증)
+- `LEVEL_5`: 5등급 (경미)

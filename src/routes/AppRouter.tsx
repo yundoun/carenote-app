@@ -5,6 +5,7 @@ import { VitalsPage } from '@/pages/VitalPage/VitalPage';
 import NursingPage from '@/pages/Nursing/NursingPage';
 import { MyPage } from '@/pages/My/MyPage';
 import { SettingsPage } from '@/pages/Settings/SettingsPage';
+import { DatabaseTest } from '@/pages/DatabaseTest';
 import { ROUTES } from './routes';
 import EducationPage from '@/pages/Education/EducationPage';
 import AnnouncementsPage from '@/pages/Announcements/AnnouncementsPage';
@@ -29,6 +30,9 @@ export function AppRouter() {
       <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
       <Route path={ROUTES.HELP} element={<div>도움말 페이지</div>} />
       <Route path={ROUTES.LOGOUT} element={<div>로그아웃 처리</div>} />
+
+      {/* 데이터베이스 테스트 페이지 */}
+      <Route path="/database-test" element={<DatabaseTest />} />
 
       {/* 404 페이지 - 존재하지 않는 경로는 홈으로 리다이렉트 */}
       <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />

@@ -14,12 +14,51 @@ import {
   Announcement,
 } from '@/features/announcements';
 
+// Redux store의 Announcement를 features/announcements의 Announcement로 변환
+const convertToFeatureAnnouncement = (storeAnnouncement: any): Announcement => {
+  // type 변환: HEADQUARTERS/FACILITY/URGENT -> company/facility/urgent
+  const typeMap: Record<string, 'company' | 'facility' | 'urgent'> = {
+    HEADQUARTERS: 'company',
+    FACILITY: 'facility',
+    URGENT: 'urgent',
+  };
+
+  // priority 결정: important가 true면 high, URGENT면 high, 나머지는 medium
+  const priority =
+    storeAnnouncement.important || storeAnnouncement.type === 'URGENT'
+      ? ('high' as const)
+      : ('medium' as const);
+
+  return {
+    id: storeAnnouncement.id,
+    title: storeAnnouncement.title,
+    content: storeAnnouncement.content,
+    type: typeMap[storeAnnouncement.type] || 'company',
+    priority,
+    author: storeAnnouncement.author,
+    publishedAt: new Date(storeAnnouncement.createdAt),
+    readBy: storeAnnouncement.isRead ? ['current-user'] : [],
+    attachments:
+      storeAnnouncement.attachments?.map((att: any) => att.url) || [],
+  };
+};
+
 export default function AnnouncementsPage() {
   const [selectedAnnouncement, setSelectedAnnouncement] =
     useState<Announcement | null>(null);
 
-  const { announcements, greetings, urgentAnnouncements, unreadCount } =
-    useAnnouncements();
+  const {
+    announcements: storeAnnouncements,
+    greetings,
+    urgentAnnouncements: storeUrgentAnnouncements,
+    unreadCount,
+  } = useAnnouncements();
+
+  // Redux store의 데이터를 features/announcements 타입으로 변환
+  const announcements = storeAnnouncements.map(convertToFeatureAnnouncement);
+  const urgentAnnouncements = storeUrgentAnnouncements.map(
+    convertToFeatureAnnouncement
+  );
 
   const handleAnnouncementClick = (announcement: Announcement) => {
     setSelectedAnnouncement(announcement);

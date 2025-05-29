@@ -23,10 +23,10 @@ export default function NursingPage() {
   const [isAddingRecord, setIsAddingRecord] = useState(false);
 
   const {
-    medicationRecords,
-    positionChangeRecords,
-    appointmentRecords,
-    nursingNotes,
+    medications,
+    positions,
+    appointments,
+    notes,
     isLoading,
   } = useNursingRecords();
 
@@ -63,19 +63,19 @@ export default function NursingPage() {
         </TabsList>
 
         <TabsContent value="medication" className="mt-0 space-y-4">
-          <MedicationRecords records={medicationRecords} />
+          <MedicationRecords records={medications} />
         </TabsContent>
 
         <TabsContent value="position" className="mt-0 space-y-4">
-          <PositionChange records={positionChangeRecords} />
+          <PositionChange records={positions} />
         </TabsContent>
 
         <TabsContent value="schedule" className="mt-0 space-y-4">
-          <AppointmentSchedule records={appointmentRecords} />
+          <AppointmentSchedule records={appointments} />
         </TabsContent>
 
         <TabsContent value="notes" className="mt-0 space-y-4">
-          <NursingNotes notes={nursingNotes} />
+          <NursingNotes notes={notes} />
         </TabsContent>
       </Tabs>
     </div>
