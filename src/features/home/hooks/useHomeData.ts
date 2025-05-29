@@ -1,41 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { GraduationCap, Bell, BarChart3, Settings } from 'lucide-react';
 import { ROUTES } from '@/routes/routes';
+import { useAppSelector } from '@/store';
 import type { HomeData, QuickAccessItem } from '../types/home.types';
 
 export function useHomeData() {
-  const [homeData, setHomeData] = useState<HomeData>({
-    todayProgress: {
-      total: 8,
-      completed: 5,
-      percentage: 62.5,
-    },
-    urgentAnnouncements: [
-      {
-        id: 1,
-        title: '오늘 오후 2시 전체 교육 실시',
-        content: '감염 예방 교육이 있습니다.',
-        isUrgent: true,
+  const { todoList, todayShift } = useAppSelector((state) => state.schedule);
+  const { urgentAlerts } = useAppSelector((state) => state.vitals);
+
+  // Redux 데이터를 기반으로 홈 데이터 계산
+  const homeData = useMemo((): HomeData => {
+    const completedTodos = todoList.filter(todo => todo.completed);
+    const progressPercentage = todoList.length > 0 
+      ? Math.round((completedTodos.length / todoList.length) * 100) 
+      : 0;
+
+    return {
+      todayProgress: {
+        total: todoList.length,
+        completed: completedTodos.length,
+        percentage: progressPercentage,
       },
-    ],
-    weeklyGoal: {
-      target: 100,
-      current: 75,
-      percentage: 75,
-    },
-    todaySchedule: [
-      {
-        time: '09:00',
-        title: '김영희님 바이탈 측정',
-        description: '혈압, 맥박, 체온 체크',
+      urgentAnnouncements: urgentAlerts.length > 0 ? [
+        {
+          id: 1,
+          title: `긴급: ${urgentAlerts.length}건의 바이탈 알림`,
+          content: '바이탈 사인 확인이 필요한 환자가 있습니다.',
+          isUrgent: true,
+        },
+      ] : [
+        {
+          id: 1,
+          title: '오늘 오후 2시 전체 교육 실시',
+          content: '감염 예방 교육이 있습니다.',
+          isUrgent: true,
+        },
+      ],
+      weeklyGoal: {
+        target: 100,
+        current: 75,
+        percentage: 75,
       },
-      {
-        time: '14:00',
-        title: '전체 교육 참석',
-        description: '감염 예방 교육',
-      },
-    ],
-  });
+      todaySchedule: todoList.slice(0, 3).map(todo => ({
+        time: todo.dueTime || '시간 미정',
+        title: todo.title,
+        description: todo.description || '',
+      })),
+    };
+  }, [todoList, urgentAlerts]);
 
   const quickAccessItems: QuickAccessItem[] = [
     {
@@ -64,14 +76,8 @@ export function useHomeData() {
     },
   ];
 
-  // TODO: 실제로는 API에서 데이터를 가져와야 함
-  useEffect(() => {
-    // API 호출 로직이 들어갈 자리
-  }, []);
-
   return {
     homeData,
     quickAccessItems,
-    setHomeData,
   };
 }

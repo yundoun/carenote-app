@@ -3,6 +3,7 @@ import { Header } from '../Header';
 import { Navigation } from '../Navigation';
 import { SideNavigation } from '../SideNavigation';
 import { useBottomNavigation } from '@/hooks/useBottomNavigation';
+import { useAppSelector } from '@/store';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -10,13 +11,14 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const { shouldShowBottomNav } = useBottomNavigation();
+  const { user } = useAppSelector((state) => state.auth);
   
-  // TODO: 실제로는 사용자 정보를 Redux store나 context에서 가져와야 함
+  // 기본값 설정
   const staffInfo = {
-    name: '김간호',
-    role: '요양보호사',
-    floor: '3층',
-    notificationCount: 2,
+    name: user?.name || '사용자',
+    role: user?.role || '직원',
+    floor: user?.floor || '',
+    notificationCount: 2, // TODO: 실제 알림 카운트로 교체
   };
 
   return (
