@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { MenuItem } from '../../types/my.types';
+import { MenuItem } from '../types/my.types';
 
 interface SettingsMenuProps {
   menuItems: MenuItem[];
@@ -11,7 +11,6 @@ interface SettingsMenuProps {
 export function SettingsMenu({ menuItems, onMenuClick }: SettingsMenuProps) {
   return (
     <>
-      <h2 className="text-xl font-semibold mb-3">설정</h2>
       <Card>
         <CardContent className="p-0">
           {menuItems.map((item, index) => (

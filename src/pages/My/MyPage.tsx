@@ -5,13 +5,11 @@ import {
   WeeklyGoal,
   WorkStatistics,
   EducationProgress,
-  SettingsMenu,
   useMyPageData,
-  MenuItem,
 } from '@/features/my';
 
 export function MyPage() {
-  const { userProfile, workStats, menuItems, isLoading } = useMyPageData();
+  const { userProfile, workStats, isLoading } = useMyPageData();
 
   const handleEditProfile = () => {
     // 프로필 편집 로직 구현
@@ -21,11 +19,6 @@ export function MyPage() {
   const handleContinueEducation = () => {
     // 교육 계속하기 로직 구현
     console.log('교육 계속하기');
-  };
-
-  const handleMenuClick = (item: MenuItem) => {
-    // 메뉴 클릭 로직 구현
-    console.log('메뉴 클릭:', item.label);
   };
 
   if (isLoading || !userProfile || !workStats) {
@@ -60,8 +53,6 @@ export function MyPage() {
         workStats={workStats}
         onContinueEducation={handleContinueEducation}
       />
-
-      <SettingsMenu menuItems={menuItems} onMenuClick={handleMenuClick} />
     </div>
   );
 }

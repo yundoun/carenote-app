@@ -1,7 +1,7 @@
 import { AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ResidentDetail } from '../../types/residents.types';
+import { ResidentDetail } from '../types/residents.types';
 
 interface UrgentCasesAlertProps {
   urgentCases: ResidentDetail[];

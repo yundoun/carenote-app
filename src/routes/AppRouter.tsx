@@ -4,6 +4,7 @@ import { SchedulePage } from '@/pages/Schedule/SchedulePage';
 import { VitalsPage } from '@/pages/VitalPage/VitalPage';
 import NursingPage from '@/pages/Nursing/NursingPage';
 import { MyPage } from '@/pages/My/MyPage';
+import { SettingsPage } from '@/pages/Settings/SettingsPage';
 import { ROUTES } from './routes';
 import EducationPage from '@/pages/Education/EducationPage';
 import AnnouncementsPage from '@/pages/Announcements/AnnouncementsPage';
@@ -14,7 +15,7 @@ export function AppRouter() {
     <Routes>
       {/* 홈 페이지 */}
       <Route path={ROUTES.HOME} element={<HomePage />} />
-      
+
       {/* 메인 페이지들 */}
       <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
       <Route path={ROUTES.VITALS} element={<VitalsPage />} />
@@ -25,7 +26,7 @@ export function AppRouter() {
       <Route path={ROUTES.RESIDENTS} element={<ResidentsPage />} />
       <Route path={ROUTES.EDUCATION} element={<EducationPage />} />
       <Route path={ROUTES.ANNOUNCEMENTS} element={<AnnouncementsPage />} />
-      <Route path={ROUTES.SETTINGS} element={<div>설정 페이지</div>} />
+      <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
       <Route path={ROUTES.HELP} element={<div>도움말 페이지</div>} />
       <Route path={ROUTES.LOGOUT} element={<div>로그아웃 처리</div>} />
 

@@ -8,33 +8,33 @@ export function useHomeData() {
     todayProgress: {
       total: 8,
       completed: 5,
-      percentage: 62.5
+      percentage: 62.5,
     },
     urgentAnnouncements: [
       {
         id: 1,
         title: '오늘 오후 2시 전체 교육 실시',
         content: '감염 예방 교육이 있습니다.',
-        isUrgent: true
-      }
+        isUrgent: true,
+      },
     ],
     weeklyGoal: {
       target: 100,
       current: 75,
-      percentage: 75
+      percentage: 75,
     },
     todaySchedule: [
       {
         time: '09:00',
         title: '김영희님 바이탈 측정',
-        description: '혈압, 맥박, 체온 체크'
+        description: '혈압, 맥박, 체온 체크',
       },
       {
         time: '14:00',
         title: '전체 교육 참석',
-        description: '감염 예방 교육'
-      }
-    ]
+        description: '감염 예방 교육',
+      },
+    ],
   });
 
   const quickAccessItems: QuickAccessItem[] = [
@@ -42,26 +42,26 @@ export function useHomeData() {
       icon: GraduationCap,
       label: '교육자료',
       path: ROUTES.EDUCATION,
-      color: 'bg-blue-500'
+      color: 'bg-blue-500',
     },
     {
       icon: Bell,
       label: '공지사항',
       path: ROUTES.ANNOUNCEMENTS,
-      color: 'bg-green-500'
+      color: 'bg-green-500',
     },
     {
       icon: BarChart3,
-      label: '근무 통계',
+      label: '마이페이지',
       path: ROUTES.MYPAGE,
-      color: 'bg-purple-500'
+      color: 'bg-purple-500',
     },
     {
       icon: Settings,
       label: '설정',
       path: ROUTES.SETTINGS,
-      color: 'bg-gray-500'
-    }
+      color: 'bg-gray-500',
+    },
   ];
 
   // TODO: 실제로는 API에서 데이터를 가져와야 함
@@ -72,6 +72,6 @@ export function useHomeData() {
   return {
     homeData,
     quickAccessItems,
-    setHomeData
+    setHomeData,
   };
 }

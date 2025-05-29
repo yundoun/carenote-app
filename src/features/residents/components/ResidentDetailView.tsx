@@ -1,5 +1,5 @@
 import { Phone, Heart, Activity } from 'lucide-react';
-import { ResidentDetail } from '../../types/residents.types';
+import { ResidentDetail } from '../types/residents.types';
 
 interface ResidentDetailViewProps {
   resident: ResidentDetail;

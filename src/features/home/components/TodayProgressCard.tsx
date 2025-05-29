@@ -1,6 +1,8 @@
 import { CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { ROUTES } from '@/routes/routes';
 import type { TodayProgress } from '../types/home.types';
 
 interface TodayProgressCardProps {
@@ -8,8 +10,16 @@ interface TodayProgressCardProps {
 }
 
 export function TodayProgressCard({ progress }: TodayProgressCardProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(ROUTES.MYPAGE);
+  };
+
   return (
-    <Card>
+    <Card
+      className="cursor-pointer hover:shadow-md transition-shadow"
+      onClick={handleClick}>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <CheckCircle2 className="h-5 w-5 text-green-500" />

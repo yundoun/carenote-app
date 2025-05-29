@@ -1,7 +1,7 @@
 import { AlertTriangle, Pill } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ResidentDetail } from '../../types/residents.types';
+import { ResidentDetail } from '../types/residents.types';
 
 interface ResidentCardProps {
   resident: ResidentDetail;
