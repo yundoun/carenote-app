@@ -1,9 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AnnouncementCard } from '../AnnouncementCard/AnnouncementCard';
-import {
-  Announcement,
-  AnnouncementType,
-} from '../../types/announcements.types';
+import { AnnouncementCard } from './AnnouncementCard';
+import { Announcement, AnnouncementType } from '../types/announcements.types';
 
 interface AnnouncementsTabsProps {
   announcements: Announcement[];

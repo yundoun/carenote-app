@@ -1,7 +1,7 @@
 import { Calendar, Users, Car, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AppointmentRecord } from '../../types/nursing.types';
+import { AppointmentRecord } from '../types/nursing.types';
 
 interface AppointmentScheduleProps {
   records: AppointmentRecord[];

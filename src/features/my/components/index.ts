@@ -1,7 +1,7 @@
-export { ProfileCard } from './ProfileCard/ProfileCard';
-export { TodayProgress } from './TodayProgress/TodayProgress';
-export { WeeklyGoal } from './WeeklyGoal/WeeklyGoal';
-export { WorkStatistics } from './WorkStatistics/WorkStatistics';
-export { EducationProgress } from './EducationProgress/EducationProgress';
-export { Achievements } from './Achievements/Achievements';
-export { SettingsMenu } from './SettingsMenu/SettingsMenu';
+export { ProfileCard } from './ProfileCard';
+export { TodayProgress } from './TodayProgress';
+export { WeeklyGoal } from './WeeklyGoal';
+export { WorkStatistics } from './WorkStatistics';
+export { EducationProgress } from './EducationProgress';
+export { Achievements } from './Achievements';
+export { SettingsMenu } from './SettingsMenu';

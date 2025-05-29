@@ -9,9 +9,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { VitalRecordForm } from '../VitalRecordForm/VitalRecordForm';
-import { useVitalStatus } from '../../hooks';
-import type { Senior, VitalSigns } from '../../types/vitals.types';
+import { VitalRecordForm } from './VitalRecordForm';
+import { useVitalStatus } from '../hooks';
+import type { Senior, VitalSigns } from '../types/vitals.types';
 
 interface VitalCardProps {
   senior: Senior;

@@ -1,6 +1,6 @@
 import { Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Greeting } from '../../types/announcements.types';
+import { Greeting } from '../types/announcements.types';
 
 interface GreetingsSectionProps {
   greetings: Greeting[];

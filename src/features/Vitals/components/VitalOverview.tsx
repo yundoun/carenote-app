@@ -1,6 +1,6 @@
-import { UrgentAlert } from '../UrgentAlert/UrgentAlert';
-import { VitalCard } from '../VitalCard/VitalCard';
-import type { Senior, VitalSigns } from '../../types/vitals.types';
+import { UrgentAlert } from './UrgentAlert';
+import { VitalCard } from './VitalCard';
+import type { Senior, VitalSigns } from '../types/vitals.types';
 
 interface VitalOverviewProps {
   seniors: Senior[];

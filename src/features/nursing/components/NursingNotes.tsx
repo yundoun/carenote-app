@@ -1,7 +1,7 @@
 import { FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { NursingNote } from '../../types/nursing.types';
+import { NursingNote } from '../types/nursing.types';
 
 interface NursingNotesProps {
   notes: NursingNote[];

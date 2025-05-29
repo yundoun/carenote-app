@@ -1,6 +1,6 @@
 import { RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PositionChangeRecord } from '../../types/nursing.types';
+import { PositionChangeRecord } from '../types/nursing.types';
 
 interface PositionChangeProps {
   records: PositionChangeRecord[];

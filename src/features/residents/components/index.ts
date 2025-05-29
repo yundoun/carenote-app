@@ -1,5 +1,5 @@
-export { ResidentSearch } from './ResidentSearch/ResidentSearch';
-export { UrgentCasesAlert } from './UrgentCasesAlert/UrgentCasesAlert';
-export { ResidentCard } from './ResidentCard/ResidentCard';
-export { ResidentDetailView } from './ResidentDetailView/ResidentDetailView';
-export { ResidentsTabs } from './ResidentsTabs/ResidentsTabs';
+export { ResidentSearch } from './ResidentSearch';
+export { UrgentCasesAlert } from './UrgentCasesAlert';
+export { ResidentCard } from './ResidentCard';
+export { ResidentDetailView } from './ResidentDetailView';
+export { ResidentsTabs } from './ResidentsTabs';

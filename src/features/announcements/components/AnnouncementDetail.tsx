@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Announcement } from '../../types/announcements.types';
+import { Announcement } from '../types/announcements.types';
 
 interface AnnouncementDetailProps {
   announcement: Announcement;

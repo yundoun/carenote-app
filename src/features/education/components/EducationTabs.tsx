@@ -1,7 +1,7 @@
 import { CheckCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { EducationMaterialCard } from '../EducationMaterialCard/EducationMaterialCard';
-import { EducationMaterial } from '../../types/education.types';
+import { EducationMaterialCard } from './EducationMaterialCard';
+import { EducationMaterial } from '../types/education.types';
 
 interface EducationTabsProps {
   recommendedMaterials: EducationMaterial[];

@@ -1,5 +1,5 @@
-export { EducationSearch } from './EducationSearch/EducationSearch';
-export { WorkRelatedRecommendations } from './WorkRelatedRecommendations/WorkRelatedRecommendations';
-export { EducationCategories } from './EducationCategories/EducationCategories';
-export { EducationMaterialCard } from './EducationMaterialCard/EducationMaterialCard';
-export { EducationTabs } from './EducationTabs/EducationTabs';
+export { EducationSearch } from './EducationSearch';
+export { WorkRelatedRecommendations } from './WorkRelatedRecommendations';
+export { EducationCategories } from './EducationCategories';
+export { EducationMaterialCard } from './EducationMaterialCard';
+export { EducationTabs } from './EducationTabs';

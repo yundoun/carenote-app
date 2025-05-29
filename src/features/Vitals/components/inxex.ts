@@ -1,6 +1,6 @@
-export { UrgentAlert } from './UrgentAlert/UrgentAlert';
-export { VitalCard } from './VitalCard/VitalCard';
-export { VitalRecordForm } from './VitalRecordForm/VitalRecordForm';
-export { VitalSchedule } from './VitalSchedule/VitalSchedule';
-export { VitalHistory } from './VitalHistory/VitalHistory';
-export { VitalOverview } from './VitalOverview/VitalOverview';
+export { UrgentAlert } from './UrgentAlert';
+export { VitalCard } from './VitalCard';
+export { VitalRecordForm } from './VitalRecordForm';
+export { VitalSchedule } from './VitalSchedule';
+export { VitalHistory } from './VitalHistory';
+export { VitalOverview } from './VitalOverview';

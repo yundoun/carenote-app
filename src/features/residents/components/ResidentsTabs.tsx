@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ResidentCard } from '../ResidentCard/ResidentCard';
-import { ResidentDetail } from '../../types/residents.types';
+import { ResidentCard } from './ResidentCard';
+import { ResidentDetail } from '../types/residents.types';
 
 interface ResidentsTabsProps {
   residents: ResidentDetail[];

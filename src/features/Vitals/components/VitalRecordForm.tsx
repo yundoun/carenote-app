@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { Senior, VitalSigns } from '../../types/vitals.types';
+import type { Senior, VitalSigns } from '../types/vitals.types';
 
 interface VitalRecordFormProps {
   senior: Senior;
