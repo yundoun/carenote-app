@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    /* 스크롤바로 인한 레이아웃 시프트 방지 */
+    scrollbar-gutter: stable;
+    /* 부드러운 스크롤 */
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    /* iOS에서 부드러운 스크롤링 */
+    -webkit-overflow-scrolling: touch;
+    /* 최소 높이 보장 */
+    min-height: 100vh;
+    min-height: 100dvh;
+    /* 동적 viewport 높이 지원 */
+  }
+}
+
+/* 레이아웃 시프트 방지 */
+@layer utilities {
+  .prevent-layout-shift {
+    /* 스크롤바 공간 항상 예약 */
+    scrollbar-gutter: stable;
+  }
+
+  .bottom-nav-safe {
+    /* 하단 네비게이션을 위한 안전 영역 */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .fixed-bottom-nav {
+    /* 안정적인 하단 고정 */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* iOS의 홈 인디케이터를 고려한 padding */
+    padding-bottom: env(safe-area-inset-bottom);
+    /* 브라우저 확대/축소 시에도 고정 */
+    transform: translateZ(0);
+    /* 고해상도 디스플레이에서 선명하게 */
+    will-change: transform;
+  }
+}
+
+/* 60세 이상 사용자를 위한 접근성 스타일 */
+@layer utilities {
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .text-large {
+    @apply text-lg;
+  }
+
+  .text-high-contrast {
+    @apply text-gray-900 dark:text-white;
+  }
+}

@@ -1,0 +1,1 @@
+export { useResidents } from './useResidents';

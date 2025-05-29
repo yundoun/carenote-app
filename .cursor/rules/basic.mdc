@@ -1,0 +1,235 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+[백엔드개발자/프론트엔드개발자/QA엔지니어 중 하나]로서 위 프로젝트에 참여하여, 사용자가 프롬프트를 통해 당신의 역할을 부여합니다.
+
+ PM(사용자)이 제공하는 문서를 바탕으로 담당 영역의 구현을 책임집니다. 항상 코드를 작성하기 전에는 자신의 역할에 알맞은 개발 표준 가이드를 반드시 확인해야 합니다. 
+
+제공하는 코드는 모두 개발 표준 가이드를 근거로  작성되어져야 하며 각 역할에 맞게 문서를 검토하고 이해해야합니다. 개발 표준 가이드에 나와있지 않은 내용은 임의로 작성해서는 안되며 필요하거나 모순적인 내용이 있을 경우에는 해당 내용에 대한 검토를 PM(인간)에게 요청하십시오. 
+
+소스 코드 작성 시 파일 위치와 파일명을 정확하게 명시해야 하며 소스 코드 작업 후 진행 상황을 사용자와 공유하십시오
+
+
+---
+
+# 개발 표준 가이드
+
+## 1. 전체 아키텍처 설계
+
+### 1.1 기술 스택 구성
+
+- **번들러**: Vite (빠른 개발 서버, HMR 지원)
+- **프레임워크**: React 18+ (Hooks 기반)
+- **라우팅**: React Router DOM v6
+- **상태관리**: Redux Toolkit + RTK Query
+- **HTTP 클라이언트**: Axios (인터셉터 활용)
+- **코드 품질**: ESLint + Prettier
+- UI 라이브러리: shadcn/ui + 커스텀 컴포넌트 시스템 
+- 스타일링: Tailwind CSS
+
+### 1.2 폴더 구조
+
+```
+src/
+├── components/          # 재사용 가능한 UI 컴포넌트
+│   ├── ui/ # shadcn/ui 컴포넌트
+│   ├── layout/ # 레이아웃 컴포넌트
+│   └── common/ # 공통 커스텀 컴포넌트
+├── pages/              # 페이지 컴포넌트
+├── hooks/              # 커스텀 훅
+├── services/           # API 서비스 레이어
+├── store/              # Redux 스토어
+├── utils/              # 유틸리티 함수
+├── types/              # TypeScript 타입 정의
+├── constants/          # 상수 정의
+└── assets/             # 정적 리소스
+```
+
+## 2. 컴포넌트 아키텍처
+
+### 2.1 컴포넌트 계층 구조
+
+- **Feature-based 구조**: 기능별 모듈화
+- **Atomic Design 부분 적용**: Atoms, Molecules, Organisms 레벨까지
+- **Container/Presenter 패턴**: 로직과 UI 분리
+
+
+```
+App
+├── SplashScreen (초기 로딩)
+├── AuthGuard (인증 가드)
+├── Layout
+│   ├── Header (GNB)
+│   ├── Navigation
+│   └── Main Content
+└── WebViewBridge (네이티브 연동)
+```
+
+### 2.2 레이아웃 컴포넌트 설계
+
+#### Header/GNB 컴포넌트
+
+- **목적**: 60세 이상 사용자를 위한 직관적인 상단 바
+- **구성요소**:
+    - 근무자 정보 (이름, 직군, 근무 층수)
+    - 알림 아이콘 (Push 메시지 상태)
+    - 메뉴 햄버거 버튼
+- **반응형**: 세로/가로 모드 대응
+- **접근성**: 큰 터치 영역, 고대비 색상 적용
+
+#### Navigation 컴포넌트
+
+- **구조**: 탭 기반 네비게이션
+- **메뉴 항목**:
+    - 근무표
+    - 바이탈
+    - 간호 기록
+    - 마이페이지
+- **시각적 피드백**: 활성 탭 강조, 애니메이션 효과
+
+
+### 2.3 UI 컴포넌트 전략
+
+#### shadcn/ui 활용
+- **기본 UI 컴포넌트**: Button, Input, Card 등 shadcn/ui 사용
+- **비즈니스 로직 컴포넌트**: 커스텀 개발
+- **Tailwind CSS**: 유틸리티 우선 스타일링 적용
+
+#### 컴포넌트 네이밍 규칙
+- shadcn/ui: 기본 제공 네이밍 유지
+- 커스텀 컴포넌트: PascalCase + 기능별 접두사
+
+
+## 3. 상태 관리 설계
+
+### 3.1 Redux Store 구조
+
+```typescript
+interface RootState {
+  auth: AuthState;
+  user: UserState;
+  schedule: ScheduleState;
+  residents: ResidentsState;
+  education: EducationState;
+  ui: UIState;
+}
+```
+
+### 3.2 RTK Query API 슬라이스
+
+```typescript
+// 인증 API
+const authApi = createApi({
+  reducerPath: 'authApi',
+  endpoints: (builder) => ({
+    login: builder.mutation(),
+    refreshToken: builder.mutation(),
+    logout: builder.mutation(),
+  })
+});
+
+// 근무표 API
+const scheduleApi = createApi({
+  reducerPath: 'scheduleApi',
+  endpoints: (builder) => ({
+    getSchedule: builder.query(),
+    updateSchedule: builder.mutation(),
+  })
+});
+```
+
+## 4. 반응형 웹 설계
+
+### 4.1 브레이크포인트 정의
+
+```css
+/* Tailwind CSS 브레이크포인트 활용 */
+/* sm: 640px, md: 768px, lg: 1024px, xl: 1280px */
+/* 모바일 우선 설계 */
+
+@media (min-width: 375px) { /* mobile-sm */ }
+@media (min-width: 640px) { /* sm - Tailwind 기본 */ }
+@media (min-width: 768px) { /* md - Tailwind 기본 */ }
+@media (min-width: 1024px) { /* lg - Tailwind 기본 */ }
+```
+
+### 4.2 터치 친화적 UI 가이드라인
+
+- 최소 터치 영역: `min-h-[44px] min-w-[44px]`
+- 버튼 간격: `gap-2` (8px)
+- 폰트 크기: `text-base` (16px) 이상
+- 시니어 친화적: `text-lg` (18px) 권장
+
+## 5. 네이티브 연동 설계
+
+### 5.1 WebView Bridge 인터페이스
+
+```typescript
+interface WebViewBridge {
+  // 앱 저장소 연동
+  setStorageItem(key: string, value: string): Promise<void>;
+  getStorageItem(key: string): Promise<string>;
+  
+  // Push 알림 처리
+  handlePushMessage(data: PushData): void;
+  
+  // 권한 요청
+  requestPermission(type: PermissionType): Promise<boolean>;
+  
+  // STT 연동
+  startSTT(): Promise<string>;
+  
+  // 플레이어 연동
+  playVideo(url: string): void;
+}
+```
+
+### 5.2 Deep Link 처리
+
+```typescript
+interface DeepLinkHandler {
+  route: string;
+  params?: Record<string, any>;
+  authenticate?: boolean;
+}
+```
+
+## 6. 성능 최적화 전략
+
+### 6.1 코드 스플리팅
+
+- 페이지별 lazy loading 적용
+- 큰 컴포넌트 동적 import
+- 번들 크기 최적화
+
+### 6.2 이미지 최적화
+
+- WebP 포맷 사용
+- 적응형 이미지 크기
+- Lazy loading 적용
+
+### 6.3 캐싱 전략
+
+- API 응답 캐싱 (RTK Query)
+- 정적 리소스 캐싱
+- 오프라인 지원 (Service Worker)
+
+## 7. 접근성 및 사용성
+
+### 7.1 60세 이상 사용자를 위한 UI 원칙
+
+- **큰 글꼴**: 기본 18px 이상
+- **명확한 아이콘**: 텍스트 라벨 병행
+- **단순한 네비게이션**: 최대 2뎁스
+- **충분한 여백**: 터치 오류 방지
+
+### 7.2 오류 처리 및 피드백
+
+- **명확한 오류 메시지**: 해결 방법 포함
+- **로딩 인디케이터**: 스켈레톤 UI 적용
+- **성공 피드백**: 토스트 메시지 활용
+
+
+이 가이드를 기반으로 케어노트 앱의 프론트엔드를 체계적으로 개발할 수 있습니다. 특히 60세 이상 사용자의 사용성을 고려한 UI/UX 설계와 네이티브 앱과의 원활한 연동에 중점을 두어 구현하시기 바랍니다.
