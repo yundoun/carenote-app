@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { HomePage } from '@/pages/Home';
 import { SchedulePage } from '@/pages/Schedule/SchedulePage';
 import { VitalsPage } from '@/pages/VitalPage/VitalPage';
 import NursingPage from '@/pages/Nursing/NursingPage';
@@ -11,13 +12,16 @@ import ResidentsPage from '@/pages/Residents/ResidentsPage';
 export function AppRouter() {
   return (
     <Routes>
+      {/* 홈 페이지 */}
+      <Route path={ROUTES.HOME} element={<HomePage />} />
+      
       {/* 메인 페이지들 */}
       <Route path={ROUTES.SCHEDULE} element={<SchedulePage />} />
       <Route path={ROUTES.VITALS} element={<VitalsPage />} />
       <Route path={ROUTES.NURSING} element={<NursingPage />} />
       <Route path={ROUTES.MYPAGE} element={<MyPage />} />
 
-      {/* 추가 페이지들 - 나중에 구현 예정 */}
+      {/* 추가 페이지들 */}
       <Route path={ROUTES.RESIDENTS} element={<ResidentsPage />} />
       <Route path={ROUTES.EDUCATION} element={<EducationPage />} />
       <Route path={ROUTES.ANNOUNCEMENTS} element={<AnnouncementsPage />} />

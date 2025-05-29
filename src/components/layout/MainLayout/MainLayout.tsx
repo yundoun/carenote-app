@@ -23,7 +23,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         floor={staffInfo.floor}
         notificationCount={staffInfo.notificationCount}
       />
-      <main className="flex-1 pb-20">{children}</main>
+      <main className="flex-1" style={{ paddingBottom: '72px' }}>{children}</main>
       <Navigation />
     </div>
   );

@@ -23,27 +23,8 @@ export interface MenuItem {
   description?: string;
 }
 
-// 빠른 접근 메뉴 아이템들
-export const quickAccessMenuItems: MenuItem[] = [
-  {
-    iconName: 'Users',
-    label: '담당자 정보',
-    path: ROUTES.RESIDENTS,
-    description: '담당 환자 정보 조회',
-  },
-  {
-    iconName: 'PlayCircle',
-    label: '교육자료',
-    path: ROUTES.EDUCATION,
-    description: '간병 교육 자료',
-  },
-  {
-    iconName: 'Bell',
-    label: '공지사항',
-    path: ROUTES.ANNOUNCEMENTS,
-    description: '중요 공지 및 알림',
-  },
-];
+// 빠른 접근 메뉴 아이템들 (홈 페이지로 이동됨)
+export const quickAccessMenuItems: MenuItem[] = [];
 
 // 시스템 메뉴 아이템들
 export const systemMenuItems: MenuItem[] = [

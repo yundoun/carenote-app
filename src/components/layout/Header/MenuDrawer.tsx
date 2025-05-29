@@ -37,25 +37,27 @@ export function MenuDrawer({ isOpen, onOpenChange }: MenuDrawerProps) {
         <div className="py-6">
           <h2 className="text-xl font-bold mb-6">케어노트 메뉴</h2>
 
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-3">
-              빠른 접근
-            </h3>
-            <nav className="space-y-2">
-              {quickAccessMenuItems.map((item, index) => (
-                <Button
-                  key={index}
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleMenuClick(item.path)}>
-                  {getIcon(item.iconName)}
-                  <span className="ml-3">{item.label}</span>
-                </Button>
-              ))}
-            </nav>
-          </div>
+          {quickAccessMenuItems.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-500 mb-3">
+                빠른 접근
+              </h3>
+              <nav className="space-y-2">
+                {quickAccessMenuItems.map((item, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => handleMenuClick(item.path)}>
+                    {getIcon(item.iconName)}
+                    <span className="ml-3">{item.label}</span>
+                  </Button>
+                ))}
+              </nav>
+            </div>
+          )}
 
-          <div className="border-t pt-4">
+          <div>
             <nav className="space-y-2">
               {systemMenuItems.map((item, index) => (
                 <Button
