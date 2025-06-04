@@ -22,7 +22,7 @@ export interface AuthState {
 const initialState: AuthState = {
   isAuthenticated: true, // 개발용으로 true 설정
   user: {
-    id: '1',
+    id: '8debc4ef-aa7a-4ddd-ae6b-4982fe89dc7b', // 김요양의 올바른 UUID
     name: '김요양',
     role: '요양보호사',
     floor: '3층',
@@ -44,7 +44,10 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    loginSuccess: (state, action: PayloadAction<{ user: User; token: string; refreshToken: string }>) => {
+    loginSuccess: (
+      state,
+      action: PayloadAction<{ user: User; token: string; refreshToken: string }>
+    ) => {
       state.isAuthenticated = true;
       state.user = action.payload.user;
       state.token = action.payload.token;

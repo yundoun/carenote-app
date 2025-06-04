@@ -1,4 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useAppSelector, useAppDispatch } from '@/store';
+import {
+  fetchTodayWorkInfo,
+  fetchWeeklySchedule,
+  updateScheduleStatus,
+  updateLocalScheduleStatus,
+  setCurrentDate,
+  toggleFullscreen,
+  navigateWeek,
+  clearError,
+} from '@/store/slices/scheduleSlice';
 import type {
   TodayShift,
   TodoItem,
@@ -6,118 +17,92 @@ import type {
 } from '../types/schedule.types';
 
 export const useSchedule = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const dispatch = useAppDispatch();
+  const {
+    todayWorkInfo,
+    weeklySchedule,
+    selectedDate,
+    currentDate,
+    isLoading,
+    error,
+    isFullscreen,
+  } = useAppSelector((state) => state.schedule);
 
-  // Mock data for today's shift
-  const todayShift: TodayShift = {
-    date: new Date(),
-    startTime: '09:00',
-    endTime: '18:00',
-    shiftType: '주간',
-    location: {
-      floor: '3층',
-      unit: 'A유닛',
-      rooms: ['301', '302', '303', '304', '305', '306', '307'],
-      totalRooms: 13,
-    },
-    assignedSeniors: [
-      {
-        id: '1',
-        name: '홍길동',
-        room: '301',
-        age: 85,
-        conditions: ['치매', '고혈압'],
-        careLevel: '3등급',
-      },
-      {
-        id: '2',
-        name: '김영희',
-        room: '302',
-        age: 78,
-        conditions: ['당뇨', '관절염'],
-        careLevel: '2등급',
-      },
-      {
-        id: '3',
-        name: '이철수',
-        room: '303',
-        age: 82,
-        conditions: ['파킨슨병'],
-        careLevel: '1등급',
-      },
-    ],
-    todoList: [
-      {
-        id: '1',
-        task: '홍길동님 혈압 측정 (오전 10시)',
-        completed: false,
-        priority: 'high',
-        estimatedTime: '10분',
-      },
-      {
-        id: '2',
-        task: '김영희님 혈당 체크 (식후)',
-        completed: true,
-        priority: 'high',
-        estimatedTime: '5분',
-      },
-      {
-        id: '3',
-        task: '이철수님 물리치료 보조',
-        completed: false,
-        priority: 'medium',
-        estimatedTime: '30분',
-      },
-      {
-        id: '4',
-        task: 'A유닛 청소 및 정리',
-        completed: false,
-        priority: 'low',
-        estimatedTime: '45분',
-      },
-      {
-        id: '5',
-        task: '간호 기록 작성',
-        completed: false,
-        priority: 'medium',
-        estimatedTime: '20분',
-      },
-    ],
-    handoverNotes: [
-      {
-        id: '1',
-        from: '박간호사',
-        message: '홍길동님 어제 밤 수면 불안정. 오늘 컨디션 체크 필요',
-        priority: 'urgent',
-        timestamp: '08:30',
-      },
-      {
-        id: '2',
-        from: '최간호사',
-        message: '김영희님 식욕 좋아짐. 당분간 식사량 모니터링 계속',
-        priority: 'normal',
-        timestamp: '08:25',
-      },
-    ],
+  // 현재 로그인한 사용자 정보 가져오기
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const caregiverId = currentUser?.id || '8debc4ef-aa7a-4ddd-ae6b-4982fe89dc7b'; // 김요양 ID로 수정
+
+  // 컴포넌트 마운트 시 오늘의 근무 정보 조회
+  useEffect(() => {
+    console.log('🔄 useSchedule 초기화 - 오늘의 근무 정보 조회 시작');
+    console.log('👤 현재 사용자:', { currentUser, caregiverId });
+
+    // 테스트를 위해 실제 데이터가 있는 날짜 사용
+    const testDate = '2025-05-29'; // 실제 데이터가 있는 날짜
+    dispatch(fetchTodayWorkInfo({ caregiverId, date: testDate }));
+  }, [dispatch, caregiverId]);
+
+  // 주간 스케줄 조회
+  const loadWeeklySchedule = (startDate: string, endDate: string) => {
+    console.log('📅 주간 스케줄 조회:', { startDate, endDate });
+    dispatch(fetchWeeklySchedule({ caregiverId, startDate, endDate }));
   };
 
+  // 스케줄 상태 업데이트
+  const updateSchedule = (
+    scheduleId: string,
+    status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
+    notes?: string
+  ) => {
+    console.log('🔄 스케줄 상태 업데이트:', { scheduleId, status, notes });
+
+    // 낙관적 업데이트
+    dispatch(updateLocalScheduleStatus({ scheduleId, status, notes }));
+
+    // 서버 업데이트
+    dispatch(updateScheduleStatus({ scheduleId, status, notes }));
+  };
+
+  // 주간 네비게이션
+  const handleNavigateWeek = (direction: 'prev' | 'next') => {
+    dispatch(navigateWeek(direction));
+
+    // 새로운 주간 스케줄 조회
+    const currentDateObj = new Date(currentDate); // string에서 Date로 변환
+    const newDate = new Date(currentDateObj);
+    newDate.setDate(currentDateObj.getDate() + (direction === 'next' ? 7 : -7));
+
+    const startDate = new Date(newDate);
+    startDate.setDate(newDate.getDate() - newDate.getDay()); // 일요일로 이동
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6); // 토요일로 이동
+
+    loadWeeklySchedule(
+      startDate.toISOString().split('T')[0],
+      endDate.toISOString().split('T')[0]
+    );
+  };
+
+  // 달력 일자 생성 (기존 로직 유지)
   const generateCalendarDays = useMemo((): CalendarDay[] => {
     const days = [];
-    const startDate = new Date(currentDate);
-    startDate.setDate(currentDate.getDate() - 3);
+    const currentDateObj = new Date(currentDate); // string에서 Date로 변환
+    const startDate = new Date(currentDateObj);
+    startDate.setDate(currentDateObj.getDate() - 3);
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
 
       const isToday = date.toDateString() === new Date().toDateString();
-      const hasShift = Math.random() > 0.3;
-      const shiftType = hasShift
-        ? Math.random() > 0.5
-          ? '주간'
-          : '야간'
-        : null;
+
+      // 주간 스케줄에서 해당 날짜의 스케줄 확인
+      const dateString = date.toISOString().split('T')[0];
+      const daySchedule = weeklySchedule.find(
+        (schedule) => schedule.date === dateString
+      );
+      const hasShift = daySchedule ? daySchedule.totalCount > 0 : false;
+      const shiftType = hasShift ? '주간' : null; // 실제로는 스케줄 타입에 따라 결정
 
       days.push({
         date,
@@ -128,25 +113,101 @@ export const useSchedule = () => {
     }
 
     return days;
-  }, [currentDate]);
+  }, [currentDate, weeklySchedule]);
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
-    setCurrentDate(newDate);
-  };
+  // todayWorkInfo를 기존 TodayShift 형태로 변환
+  const todayShift: TodayShift | null = useMemo(() => {
+    if (!todayWorkInfo) return null;
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    // 담당 거주자들을 기존 Senior 타입으로 변환
+    const assignedSeniors = todayWorkInfo.assignedSchedules
+      .map((schedule) => ({
+        id: schedule.resident?.id || '',
+        name: schedule.resident?.name || '',
+        room: schedule.resident?.room_number || '',
+        age: schedule.resident?.age || 0,
+        conditions: [], // 실제로는 residents 테이블에서 조건 정보를 가져와야 함
+        careLevel: schedule.resident?.care_level || '',
+      }))
+      .filter(
+        (senior, index, self) =>
+          // 중복 제거
+          index === self.findIndex((s) => s.id === senior.id)
+      );
+
+    // 담당 병실 번호들을 수집 (중복 제거)
+    const assignedRooms = Array.from(
+      new Set(
+        todayWorkInfo.assignedSchedules
+          .map((schedule) => schedule.resident?.room_number)
+          .filter((room): room is string => Boolean(room)) // 타입 가드로 string만 허용
+      )
+    ).sort(); // 정렬
+
+    // 스케줄을 TodoItem으로 변환
+    const todoList: TodoItem[] = todayWorkInfo.assignedSchedules.map(
+      (schedule) => ({
+        id: schedule.id,
+        task: `${schedule.resident?.name}님 ${schedule.title} (${new Date(
+          schedule.scheduled_time
+        ).toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })})`,
+        completed: schedule.status === 'COMPLETED',
+        priority:
+          schedule.priority === 'HIGH'
+            ? 'high'
+            : schedule.priority === 'MEDIUM'
+            ? 'medium'
+            : 'low',
+        estimatedTime: `${schedule.duration_minutes || 15}분`,
+      })
+    );
+
+    return {
+      date: new Date(),
+      startTime: '09:00',
+      endTime: '18:00',
+      shiftType: '주간',
+      location: {
+        floor: String(todayWorkInfo.workLocation?.floor || '3층'),
+        unit: todayWorkInfo.workLocation?.unit || 'A유닛',
+        rooms: assignedRooms, // 실제 담당 병실 번호들
+        totalRooms: assignedRooms.length, // 실제 담당 병실 수
+      },
+      assignedSeniors,
+      todoList,
+      handoverNotes: [], // 별도 테이블에서 가져와야 함
+    };
+  }, [todayWorkInfo]);
+
+  // 오류 정리
+  const clearScheduleError = () => {
+    dispatch(clearError());
   };
 
   return {
+    // 상태
     currentDate,
-    setCurrentDate,
+    selectedDate,
     isFullscreen,
+    isLoading,
+    error,
+
+    // 데이터
     todayShift,
+    todayWorkInfo,
+    weeklySchedule,
     generateCalendarDays,
-    navigateWeek,
-    toggleFullscreen,
+
+    // 액션
+    setCurrentDate: (date: Date) =>
+      dispatch(setCurrentDate(date.toISOString().split('T')[0])), // Date를 string으로 변환
+    toggleFullscreen: () => dispatch(toggleFullscreen()),
+    navigateWeek: handleNavigateWeek,
+    updateScheduleStatus: updateSchedule,
+    loadWeeklySchedule,
+    clearError: clearScheduleError,
   };
 };

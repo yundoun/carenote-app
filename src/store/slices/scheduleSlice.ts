@@ -1,4 +1,66 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import {
+  ScheduleService,
+  type TodayWorkInfo,
+  type ScheduleByDate,
+  type CareScheduleWithResident,
+} from '@/services/schedule.service';
+
+// API 비동기 액션들
+export const fetchTodayWorkInfo = createAsyncThunk(
+  'schedule/fetchTodayWorkInfo',
+  async (params: { caregiverId: string; date?: string }) => {
+    const response = await ScheduleService.getTodayWorkInfo(
+      params.caregiverId,
+      params.date
+    );
+    return response.data;
+  }
+);
+
+export const fetchWeeklySchedule = createAsyncThunk(
+  'schedule/fetchWeeklySchedule',
+  async (params: {
+    caregiverId: string;
+    startDate: string;
+    endDate: string;
+  }) => {
+    const response = await ScheduleService.getWeeklySchedule(
+      params.caregiverId,
+      params.startDate,
+      params.endDate
+    );
+    return response.data;
+  }
+);
+
+export const updateScheduleStatus = createAsyncThunk(
+  'schedule/updateStatus',
+  async (params: {
+    scheduleId: string;
+    status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+    notes?: string;
+  }) => {
+    const response = await ScheduleService.updateScheduleStatus(
+      params.scheduleId,
+      params.status,
+      params.notes
+    );
+    return {
+      ...response.data,
+      scheduleId: params.scheduleId,
+      status: params.status,
+    };
+  }
+);
+
+export const createNewSchedule = createAsyncThunk(
+  'schedule/createSchedule',
+  async (scheduleData: any) => {
+    const response = await ScheduleService.createSchedule(scheduleData);
+    return response.data;
+  }
+);
 
 export interface TodoItem {
   id: string;
@@ -48,25 +110,19 @@ export interface CalendarDay {
 }
 
 export interface ScheduleState {
-  todayShift: TodayShift | null;
-  weeklySchedule: CalendarDay[];
+  todayWorkInfo: TodayWorkInfo | null;
+  weeklySchedule: ScheduleByDate[];
   todoList: TodoItem[];
   handoverNotes: HandoverNote[];
   selectedDate: string;
+  currentDate: string;
   isLoading: boolean;
   error: string | null;
+  isFullscreen: boolean;
 }
 
 const initialState: ScheduleState = {
-  todayShift: {
-    id: '1',
-    date: new Date().toISOString().split('T')[0],
-    shiftType: 'day',
-    startTime: '08:00',
-    endTime: '16:00',
-    assignedSeniors: ['김영희', '홍길동', '이철수'],
-    totalSeniors: 3,
-  },
+  todayWorkInfo: null,
   weeklySchedule: [],
   todoList: [
     {
@@ -108,8 +164,10 @@ const initialState: ScheduleState = {
     },
   ],
   selectedDate: new Date().toISOString().split('T')[0],
+  currentDate: new Date().toISOString().split('T')[0],
   isLoading: false,
   error: null,
+  isFullscreen: false,
 };
 
 const scheduleSlice = createSlice({
@@ -119,6 +177,64 @@ const scheduleSlice = createSlice({
     setSelectedDate: (state, action: PayloadAction<string>) => {
       state.selectedDate = action.payload;
     },
+    setCurrentDate: (state, action: PayloadAction<string>) => {
+      state.currentDate = action.payload;
+    },
+    toggleFullscreen: (state) => {
+      state.isFullscreen = !state.isFullscreen;
+    },
+    navigateWeek: (state, action: PayloadAction<'prev' | 'next'>) => {
+      const currentDate = new Date(state.currentDate);
+      const newDate = new Date(currentDate);
+      newDate.setDate(
+        currentDate.getDate() + (action.payload === 'next' ? 7 : -7)
+      );
+      state.currentDate = newDate.toISOString().split('T')[0];
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+    // 로컬에서 스케줄 상태 업데이트 (낙관적 업데이트)
+    updateLocalScheduleStatus: (
+      state,
+      action: PayloadAction<{
+        scheduleId: string;
+        status: string;
+        notes?: string;
+      }>
+    ) => {
+      const { scheduleId, status, notes } = action.payload;
+
+      // 오늘의 스케줄에서 업데이트
+      if (state.todayWorkInfo) {
+        const schedule = state.todayWorkInfo.assignedSchedules.find(
+          (s) => s.id === scheduleId
+        );
+        if (schedule) {
+          schedule.status = status as any;
+          if (notes) schedule.notes = notes;
+
+          // 완료/대기 카운트 재계산
+          state.todayWorkInfo.completedSchedules =
+            state.todayWorkInfo.assignedSchedules.filter(
+              (s) => s.status === 'COMPLETED'
+            ).length;
+          state.todayWorkInfo.pendingSchedules =
+            state.todayWorkInfo.assignedSchedules.filter(
+              (s) => s.status === 'PENDING'
+            ).length;
+        }
+      }
+
+      // 주간 스케줄에서도 업데이트
+      state.weeklySchedule.forEach((daySchedule) => {
+        const schedule = daySchedule.schedules.find((s) => s.id === scheduleId);
+        if (schedule) {
+          schedule.status = status as any;
+          if (notes) schedule.notes = notes;
+        }
+      });
+    },
     addTodoItem: (state, action: PayloadAction<Omit<TodoItem, 'id'>>) => {
       const newTodo: TodoItem = {
         id: Date.now().toString(),
@@ -127,22 +243,33 @@ const scheduleSlice = createSlice({
       state.todoList.push(newTodo);
     },
     toggleTodoItem: (state, action: PayloadAction<string>) => {
-      const todo = state.todoList.find(item => item.id === action.payload);
+      const todo = state.todoList.find((item) => item.id === action.payload);
       if (todo) {
         todo.completed = !todo.completed;
       }
     },
-    updateTodoItem: (state, action: PayloadAction<{ id: string; updates: Partial<TodoItem> }>) => {
+    updateTodoItem: (
+      state,
+      action: PayloadAction<{ id: string; updates: Partial<TodoItem> }>
+    ) => {
       const { id, updates } = action.payload;
-      const todoIndex = state.todoList.findIndex(item => item.id === id);
+      const todoIndex = state.todoList.findIndex((item) => item.id === id);
       if (todoIndex !== -1) {
-        state.todoList[todoIndex] = { ...state.todoList[todoIndex], ...updates };
+        state.todoList[todoIndex] = {
+          ...state.todoList[todoIndex],
+          ...updates,
+        };
       }
     },
     removeTodoItem: (state, action: PayloadAction<string>) => {
-      state.todoList = state.todoList.filter(item => item.id !== action.payload);
+      state.todoList = state.todoList.filter(
+        (item) => item.id !== action.payload
+      );
     },
-    addHandoverNote: (state, action: PayloadAction<Omit<HandoverNote, 'id' | 'timestamp'>>) => {
+    addHandoverNote: (
+      state,
+      action: PayloadAction<Omit<HandoverNote, 'id' | 'timestamp'>>
+    ) => {
       const newNote: HandoverNote = {
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
@@ -150,7 +277,7 @@ const scheduleSlice = createSlice({
       };
       state.handoverNotes.unshift(newNote);
     },
-    updateWeeklySchedule: (state, action: PayloadAction<CalendarDay[]>) => {
+    updateWeeklySchedule: (state, action: PayloadAction<ScheduleByDate[]>) => {
       state.weeklySchedule = action.payload;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -160,10 +287,121 @@ const scheduleSlice = createSlice({
       state.error = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      // fetchTodayWorkInfo
+      .addCase(fetchTodayWorkInfo.pending, (state) => {
+        console.log('🔄 fetchTodayWorkInfo.pending - 로딩 시작');
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTodayWorkInfo.fulfilled, (state, action) => {
+        console.log('✅ fetchTodayWorkInfo.fulfilled - 데이터 수신 성공');
+        console.log('📊 받은 데이터:', action.payload);
+
+        state.isLoading = false;
+        state.todayWorkInfo = action.payload;
+
+        console.log('📋 Store 업데이트 완료:', state.todayWorkInfo);
+      })
+      .addCase(fetchTodayWorkInfo.rejected, (state, action) => {
+        console.error('❌ fetchTodayWorkInfo.rejected - 데이터 수신 실패');
+        console.error('오류 정보:', action.error);
+
+        state.isLoading = false;
+        state.error =
+          action.error.message || '오늘의 근무 정보 조회에 실패했습니다.';
+      })
+
+      // fetchWeeklySchedule
+      .addCase(fetchWeeklySchedule.pending, (state) => {
+        console.log('🔄 fetchWeeklySchedule.pending - 로딩 시작');
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchWeeklySchedule.fulfilled, (state, action) => {
+        console.log('✅ fetchWeeklySchedule.fulfilled - 데이터 수신 성공');
+        console.log('📊 받은 데이터:', action.payload);
+
+        state.isLoading = false;
+        state.weeklySchedule = action.payload;
+
+        console.log('📋 주간 스케줄 업데이트 완료:', state.weeklySchedule);
+      })
+      .addCase(fetchWeeklySchedule.rejected, (state, action) => {
+        console.error('❌ fetchWeeklySchedule.rejected - 데이터 수신 실패');
+        console.error('오류 정보:', action.error);
+
+        state.isLoading = false;
+        state.error =
+          action.error.message || '주간 스케줄 조회에 실패했습니다.';
+      })
+
+      // updateScheduleStatus
+      .addCase(updateScheduleStatus.pending, (state) => {
+        console.log('🔄 updateScheduleStatus.pending - 업데이트 시작');
+      })
+      .addCase(updateScheduleStatus.fulfilled, (state, action) => {
+        console.log('✅ updateScheduleStatus.fulfilled - 업데이트 성공');
+        console.log('📊 업데이트된 데이터:', action.payload);
+
+        // 이미 updateLocalScheduleStatus에서 낙관적 업데이트가 되었으므로
+        // 여기서는 추가 처리만 수행
+        state.error = null;
+      })
+      .addCase(updateScheduleStatus.rejected, (state, action) => {
+        console.error('❌ updateScheduleStatus.rejected - 업데이트 실패');
+        console.error('오류 정보:', action.error);
+
+        state.error =
+          action.error.message || '스케줄 상태 업데이트에 실패했습니다.';
+        // TODO: 낙관적 업데이트 롤백 로직 추가
+      })
+
+      // createNewSchedule
+      .addCase(createNewSchedule.pending, (state) => {
+        console.log('🔄 createNewSchedule.pending - 생성 시작');
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createNewSchedule.fulfilled, (state, action) => {
+        console.log('✅ createNewSchedule.fulfilled - 생성 성공');
+        console.log('📊 생성된 데이터:', action.payload);
+
+        state.isLoading = false;
+        state.error = null;
+
+        // 새로운 스케줄을 현재 데이터에 추가
+        if (state.todayWorkInfo) {
+          // 오늘 날짜의 스케줄이면 todayWorkInfo에 추가
+          const today = new Date().toISOString().split('T')[0];
+          const scheduleDate = action.payload.scheduled_time.split('T')[0];
+
+          if (scheduleDate === today) {
+            // 거주자와 케어기버 정보를 포함한 형태로 변환 필요
+            // 실제로는 새로 조회하거나 별도 처리 필요
+            state.todayWorkInfo.totalSchedules += 1;
+            state.todayWorkInfo.pendingSchedules += 1;
+          }
+        }
+      })
+      .addCase(createNewSchedule.rejected, (state, action) => {
+        console.error('❌ createNewSchedule.rejected - 생성 실패');
+        console.error('오류 정보:', action.error);
+
+        state.isLoading = false;
+        state.error = action.error.message || '새 스케줄 생성에 실패했습니다.';
+      });
+  },
 });
 
 export const {
   setSelectedDate,
+  setCurrentDate,
+  toggleFullscreen,
+  navigateWeek,
+  clearError,
+  updateLocalScheduleStatus,
   addTodoItem,
   toggleTodoItem,
   updateTodoItem,

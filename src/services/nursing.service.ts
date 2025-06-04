@@ -77,6 +77,46 @@ export interface CareScheduleListItem {
   updated_at: string | null;
 }
 
+// 투약 기록과 거주자 정보를 조인한 타입
+export interface MedicationRecordWithResident extends MedicationRecord {
+  resident: {
+    id: string;
+    name: string;
+    room_number: string | null;
+    age: number | null;
+  } | null;
+  caregiver: {
+    id: string;
+    name: string;
+    role: string;
+  } | null;
+}
+
+// 체위변경 기록과 거주자 정보를 조인한 타입
+export interface PositionChangeRecordWithResident extends PositionChangeRecord {
+  resident: {
+    id: string;
+    name: string;
+    room_number: string | null;
+    age: number | null;
+  } | null;
+  caregiver: {
+    id: string;
+    name: string;
+    role: string;
+  } | null;
+}
+
+// 종합 간병 기록 정보
+export interface NursingRecordsInfo {
+  medicationRecords: MedicationRecordWithResident[];
+  positionChangeRecords: PositionChangeRecordWithResident[];
+  totalMedications: number;
+  completedMedications: number;
+  missedMedications: number;
+  totalPositionChanges: number;
+}
+
 export class NursingService {
   // 투약 기록 조회
   static async getMedicationRecords(params?: {
@@ -88,17 +128,27 @@ export class NursingService {
     size?: number;
   }): Promise<ApiResponse<PagedResponse<MedicationRecordListItem>>> {
     try {
-      const { page = 1, size = 20, residentId, caregiverId, date, status } = params || {};
+      const {
+        page = 1,
+        size = 20,
+        residentId,
+        caregiverId,
+        date,
+        status,
+      } = params || {};
       const from = (page - 1) * size;
       const to = from + size - 1;
 
       let query = supabase
         .from('medication_records')
-        .select(`
+        .select(
+          `
           *,
           residents(name),
           staff_profiles(name)
-        `, { count: 'exact' })
+        `,
+          { count: 'exact' }
+        )
         .order('recorded_at', { ascending: false })
         .range(from, to);
 
@@ -129,21 +179,23 @@ export class NursingService {
       const totalElements = count || 0;
       const totalPages = Math.ceil(totalElements / size);
 
-      const records: MedicationRecordListItem[] = (data || []).map(record => ({
-        id: record.id,
-        resident_id: record.resident_id,
-        resident_name: record.residents?.name,
-        caregiver_id: record.caregiver_id,
-        caregiver_name: record.staff_profiles?.name,
-        medication_name: record.medication_name,
-        dosage: record.dosage,
-        scheduled_time: record.scheduled_time,
-        actual_time: record.actual_time,
-        status: record.status,
-        notes: record.notes,
-        recorded_at: record.recorded_at,
-        created_at: record.created_at,
-      }));
+      const records: MedicationRecordListItem[] = (data || []).map(
+        (record) => ({
+          id: record.id,
+          resident_id: record.resident_id,
+          resident_name: record.residents?.name,
+          caregiver_id: record.caregiver_id,
+          caregiver_name: record.staff_profiles?.name,
+          medication_name: record.medication_name,
+          dosage: record.dosage,
+          scheduled_time: record.scheduled_time,
+          actual_time: record.actual_time,
+          status: record.status,
+          notes: record.notes,
+          recorded_at: record.recorded_at,
+          created_at: record.created_at,
+        })
+      );
 
       return {
         code: 'SUCCESS',
@@ -171,18 +223,32 @@ export class NursingService {
 
   // 투약 기록 생성
   static async createMedicationRecord(
-    recordData: Omit<MedicationRecord, 'id' | 'created_at'>
+    recordData: Omit<MedicationRecord, 'id' | 'created_at' | 'recorded_at'> & {
+      recorded_at?: string;
+    }
   ): Promise<ApiResponse<MedicationRecord>> {
     try {
+      console.log(
+        '➕ NursingService.createMedicationRecord 호출됨:',
+        recordData
+      );
+
+      const insertData = {
+        ...recordData,
+        recorded_at: recordData.recorded_at || new Date().toISOString(),
+      };
+
       const { data, error } = await supabase
         .from('medication_records')
-        .insert(recordData)
+        .insert([insertData])
         .select()
         .single();
 
       if (error) {
         throw error;
       }
+
+      console.log('✅ 투약 기록 생성 성공:', data);
 
       return {
         code: 'SUCCESS',
@@ -191,9 +257,9 @@ export class NursingService {
         data,
       };
     } catch (error) {
-      console.error('Error creating medication record:', error);
+      console.error('💥 NursingService.createMedicationRecord 오류:', error);
       throw {
-        code: 'NURSING_002',
+        code: 'NURSING_003',
         message: '투약 기록 생성 실패',
         timestamp: new Date().toISOString(),
       };
@@ -209,17 +275,26 @@ export class NursingService {
     size?: number;
   }): Promise<ApiResponse<PagedResponse<PositionChangeRecordListItem>>> {
     try {
-      const { page = 1, size = 20, residentId, caregiverId, date } = params || {};
+      const {
+        page = 1,
+        size = 20,
+        residentId,
+        caregiverId,
+        date,
+      } = params || {};
       const from = (page - 1) * size;
       const to = from + size - 1;
 
       let query = supabase
         .from('position_change_records')
-        .select(`
+        .select(
+          `
           *,
           residents(name),
           staff_profiles(name)
-        `, { count: 'exact' })
+        `,
+          { count: 'exact' }
+        )
         .order('change_time', { ascending: false })
         .range(from, to);
 
@@ -246,19 +321,21 @@ export class NursingService {
       const totalElements = count || 0;
       const totalPages = Math.ceil(totalElements / size);
 
-      const records: PositionChangeRecordListItem[] = (data || []).map(record => ({
-        id: record.id,
-        resident_id: record.resident_id,
-        resident_name: record.residents?.name,
-        caregiver_id: record.caregiver_id,
-        caregiver_name: record.staff_profiles?.name,
-        change_time: record.change_time,
-        from_position: record.from_position,
-        to_position: record.to_position,
-        skin_condition: record.skin_condition,
-        notes: record.notes,
-        created_at: record.created_at,
-      }));
+      const records: PositionChangeRecordListItem[] = (data || []).map(
+        (record) => ({
+          id: record.id,
+          resident_id: record.resident_id,
+          resident_name: record.residents?.name,
+          caregiver_id: record.caregiver_id,
+          caregiver_name: record.staff_profiles?.name,
+          change_time: record.change_time,
+          from_position: record.from_position,
+          to_position: record.to_position,
+          skin_condition: record.skin_condition,
+          notes: record.notes,
+          created_at: record.created_at,
+        })
+      );
 
       return {
         code: 'SUCCESS',
@@ -284,20 +361,27 @@ export class NursingService {
     }
   }
 
-  // 체위변경 기록 생성
+  // 새 체위변경 기록 생성
   static async createPositionChangeRecord(
     recordData: Omit<PositionChangeRecord, 'id' | 'created_at'>
   ): Promise<ApiResponse<PositionChangeRecord>> {
     try {
+      console.log(
+        '➕ NursingService.createPositionChangeRecord 호출됨:',
+        recordData
+      );
+
       const { data, error } = await supabase
         .from('position_change_records')
-        .insert(recordData)
+        .insert([recordData])
         .select()
         .single();
 
       if (error) {
         throw error;
       }
+
+      console.log('✅ 체위변경 기록 생성 성공:', data);
 
       return {
         code: 'SUCCESS',
@@ -306,10 +390,53 @@ export class NursingService {
         data,
       };
     } catch (error) {
-      console.error('Error creating position change record:', error);
+      console.error(
+        '💥 NursingService.createPositionChangeRecord 오류:',
+        error
+      );
       throw {
         code: 'NURSING_004',
         message: '체위변경 기록 생성 실패',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 투약 기록 상태 업데이트
+  static async updateMedicationRecord(
+    recordId: string,
+    updates: Partial<MedicationRecord>
+  ): Promise<ApiResponse<MedicationRecord>> {
+    try {
+      console.log('🔄 NursingService.updateMedicationRecord 호출됨:', {
+        recordId,
+        updates,
+      });
+
+      const { data, error } = await supabase
+        .from('medication_records')
+        .update(updates)
+        .eq('id', recordId)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ 투약 기록 업데이트 성공:', data);
+
+      return {
+        code: 'SUCCESS',
+        message: '투약 기록 업데이트 성공',
+        timestamp: new Date().toISOString(),
+        data,
+      };
+    } catch (error) {
+      console.error('💥 NursingService.updateMedicationRecord 오류:', error);
+      throw {
+        code: 'NURSING_005',
+        message: '투약 기록 업데이트 실패',
         timestamp: new Date().toISOString(),
       };
     }
@@ -325,16 +452,26 @@ export class NursingService {
     size?: number;
   }): Promise<ApiResponse<PagedResponse<AppointmentListItem>>> {
     try {
-      const { page = 1, size = 20, residentId, type, date, status } = params || {};
+      const {
+        page = 1,
+        size = 20,
+        residentId,
+        type,
+        date,
+        status,
+      } = params || {};
       const from = (page - 1) * size;
       const to = from + size - 1;
 
       let query = supabase
         .from('appointments')
-        .select(`
+        .select(
+          `
           *,
           residents(name)
-        `, { count: 'exact' })
+        `,
+          { count: 'exact' }
+        )
         .order('scheduled_date', { ascending: true })
         .order('scheduled_time', { ascending: true })
         .range(from, to);
@@ -364,27 +501,29 @@ export class NursingService {
       const totalElements = count || 0;
       const totalPages = Math.ceil(totalElements / size);
 
-      const appointments: AppointmentListItem[] = (data || []).map(appointment => ({
-        id: appointment.id,
-        resident_id: appointment.resident_id,
-        resident_name: appointment.residents?.name,
-        type: appointment.type,
-        title: appointment.title,
-        hospital: appointment.hospital,
-        department: appointment.department,
-        scheduled_date: appointment.scheduled_date,
-        scheduled_time: appointment.scheduled_time,
-        purpose: appointment.purpose,
-        accompanied_by: appointment.accompanied_by,
-        transportation: appointment.transportation,
-        visitors: appointment.visitors,
-        location: appointment.location,
-        duration_minutes: appointment.duration_minutes,
-        notes: appointment.notes,
-        status: appointment.status,
-        created_at: appointment.created_at,
-        updated_at: appointment.updated_at,
-      }));
+      const appointments: AppointmentListItem[] = (data || []).map(
+        (appointment) => ({
+          id: appointment.id,
+          resident_id: appointment.resident_id,
+          resident_name: appointment.residents?.name,
+          type: appointment.type,
+          title: appointment.title,
+          hospital: appointment.hospital,
+          department: appointment.department,
+          scheduled_date: appointment.scheduled_date,
+          scheduled_time: appointment.scheduled_time,
+          purpose: appointment.purpose,
+          accompanied_by: appointment.accompanied_by,
+          transportation: appointment.transportation,
+          visitors: appointment.visitors,
+          location: appointment.location,
+          duration_minutes: appointment.duration_minutes,
+          notes: appointment.notes,
+          status: appointment.status,
+          created_at: appointment.created_at,
+          updated_at: appointment.updated_at,
+        })
+      );
 
       return {
         code: 'SUCCESS',
@@ -453,17 +592,29 @@ export class NursingService {
     size?: number;
   }): Promise<ApiResponse<PagedResponse<CareScheduleListItem>>> {
     try {
-      const { page = 1, size = 20, residentId, caregiverId, date, type, status, priority } = params || {};
+      const {
+        page = 1,
+        size = 20,
+        residentId,
+        caregiverId,
+        date,
+        type,
+        status,
+        priority,
+      } = params || {};
       const from = (page - 1) * size;
       const to = from + size - 1;
 
       let query = supabase
         .from('care_schedules')
-        .select(`
+        .select(
+          `
           *,
           residents(name),
           staff_profiles(name)
-        `, { count: 'exact' })
+        `,
+          { count: 'exact' }
+        )
         .order('scheduled_time', { ascending: true })
         .range(from, to);
 
@@ -478,7 +629,9 @@ export class NursingService {
       if (date) {
         const startDate = `${date}T00:00:00.000Z`;
         const endDate = `${date}T23:59:59.999Z`;
-        query = query.gte('scheduled_time', startDate).lte('scheduled_time', endDate);
+        query = query
+          .gte('scheduled_time', startDate)
+          .lte('scheduled_time', endDate);
       }
 
       if (type) {
@@ -502,23 +655,25 @@ export class NursingService {
       const totalElements = count || 0;
       const totalPages = Math.ceil(totalElements / size);
 
-      const schedules: CareScheduleListItem[] = (data || []).map(schedule => ({
-        id: schedule.id,
-        resident_id: schedule.resident_id,
-        resident_name: schedule.residents?.name,
-        caregiver_id: schedule.caregiver_id,
-        caregiver_name: schedule.staff_profiles?.name,
-        type: schedule.type,
-        title: schedule.title,
-        description: schedule.description,
-        scheduled_time: schedule.scheduled_time,
-        duration_minutes: schedule.duration_minutes,
-        status: schedule.status,
-        priority: schedule.priority,
-        notes: schedule.notes,
-        created_at: schedule.created_at,
-        updated_at: schedule.updated_at,
-      }));
+      const schedules: CareScheduleListItem[] = (data || []).map(
+        (schedule) => ({
+          id: schedule.id,
+          resident_id: schedule.resident_id,
+          resident_name: schedule.residents?.name,
+          caregiver_id: schedule.caregiver_id,
+          caregiver_name: schedule.staff_profiles?.name,
+          type: schedule.type,
+          title: schedule.title,
+          description: schedule.description,
+          scheduled_time: schedule.scheduled_time,
+          duration_minutes: schedule.duration_minutes,
+          status: schedule.status,
+          priority: schedule.priority,
+          notes: schedule.notes,
+          created_at: schedule.created_at,
+          updated_at: schedule.updated_at,
+        })
+      );
 
       return {
         code: 'SUCCESS',
@@ -582,6 +737,198 @@ export class NursingService {
       throw {
         code: 'NURSING_008',
         message: '케어 스케줄 상태 업데이트 실패',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 오늘의 간병 기록 조회
+  static async getTodayNursingRecords(
+    caregiverId: string,
+    date?: string
+  ): Promise<ApiResponse<NursingRecordsInfo>> {
+    try {
+      console.log('🔍 NursingService.getTodayNursingRecords 호출됨:', {
+        caregiverId,
+        date,
+      });
+
+      const targetDate = date || new Date().toISOString().split('T')[0];
+
+      // 투약 기록 조회
+      const { data: medicationRecords, error: medError } = await supabase
+        .from('medication_records')
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
+        .eq('caregiver_id', caregiverId)
+        .gte('recorded_at', `${targetDate}T00:00:00.000Z`)
+        .lt('recorded_at', `${targetDate}T23:59:59.999Z`)
+        .order('recorded_at', { ascending: false });
+
+      if (medError) {
+        throw medError;
+      }
+
+      // 체위변경 기록 조회
+      const { data: positionRecords, error: posError } = await supabase
+        .from('position_change_records')
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
+        .eq('caregiver_id', caregiverId)
+        .gte('change_time', `${targetDate}T00:00:00.000Z`)
+        .lt('change_time', `${targetDate}T23:59:59.999Z`)
+        .order('change_time', { ascending: false });
+
+      if (posError) {
+        throw posError;
+      }
+
+      console.log('✅ 간병 기록 조회 성공:', {
+        medicationRecords,
+        positionRecords,
+      });
+
+      const medicationRecordsWithResident = (medicationRecords ||
+        []) as MedicationRecordWithResident[];
+      const positionRecordsWithResident = (positionRecords ||
+        []) as PositionChangeRecordWithResident[];
+
+      const totalMedications = medicationRecordsWithResident.length;
+      const completedMedications = medicationRecordsWithResident.filter(
+        (r) => r.status === 'COMPLETED'
+      ).length;
+      const missedMedications = medicationRecordsWithResident.filter(
+        (r) => r.status === 'MISSED'
+      ).length;
+      const totalPositionChanges = positionRecordsWithResident.length;
+
+      const result = {
+        code: 'SUCCESS',
+        message: '오늘의 간병 기록 조회 성공',
+        timestamp: new Date().toISOString(),
+        data: {
+          medicationRecords: medicationRecordsWithResident,
+          positionChangeRecords: positionRecordsWithResident,
+          totalMedications,
+          completedMedications,
+          missedMedications,
+          totalPositionChanges,
+        },
+      };
+
+      console.log('📋 최종 반환 데이터:', result);
+      return result;
+    } catch (error) {
+      console.error('💥 NursingService.getTodayNursingRecords 오류:', error);
+      throw {
+        code: 'NURSING_001',
+        message: '간병 기록 조회 실패',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 특정 거주자의 간병 기록 조회
+  static async getResidentNursingRecords(
+    residentId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ApiResponse<NursingRecordsInfo>> {
+    try {
+      console.log('🔍 NursingService.getResidentNursingRecords 호출됨:', {
+        residentId,
+        startDate,
+        endDate,
+      });
+
+      const start = startDate || new Date().toISOString().split('T')[0];
+      const end = endDate || start;
+
+      // 투약 기록 조회
+      const { data: medicationRecords, error: medError } = await supabase
+        .from('medication_records')
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
+        .eq('resident_id', residentId)
+        .gte('recorded_at', `${start}T00:00:00.000Z`)
+        .lte('recorded_at', `${end}T23:59:59.999Z`)
+        .order('recorded_at', { ascending: false });
+
+      if (medError) {
+        throw medError;
+      }
+
+      // 체위변경 기록 조회
+      const { data: positionRecords, error: posError } = await supabase
+        .from('position_change_records')
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
+        .eq('resident_id', residentId)
+        .gte('change_time', `${start}T00:00:00.000Z`)
+        .lte('change_time', `${end}T23:59:59.999Z`)
+        .order('change_time', { ascending: false });
+
+      if (posError) {
+        throw posError;
+      }
+
+      console.log('✅ 거주자 간병 기록 조회 성공:', {
+        medicationRecords,
+        positionRecords,
+      });
+
+      const medicationRecordsWithResident = (medicationRecords ||
+        []) as MedicationRecordWithResident[];
+      const positionRecordsWithResident = (positionRecords ||
+        []) as PositionChangeRecordWithResident[];
+
+      const totalMedications = medicationRecordsWithResident.length;
+      const completedMedications = medicationRecordsWithResident.filter(
+        (r) => r.status === 'COMPLETED'
+      ).length;
+      const missedMedications = medicationRecordsWithResident.filter(
+        (r) => r.status === 'MISSED'
+      ).length;
+      const totalPositionChanges = positionRecordsWithResident.length;
+
+      return {
+        code: 'SUCCESS',
+        message: '거주자 간병 기록 조회 성공',
+        timestamp: new Date().toISOString(),
+        data: {
+          medicationRecords: medicationRecordsWithResident,
+          positionChangeRecords: positionRecordsWithResident,
+          totalMedications,
+          completedMedications,
+          missedMedications,
+          totalPositionChanges,
+        },
+      };
+    } catch (error) {
+      console.error('💥 NursingService.getResidentNursingRecords 오류:', error);
+      throw {
+        code: 'NURSING_002',
+        message: '거주자 간병 기록 조회 실패',
         timestamp: new Date().toISOString(),
       };
     }
