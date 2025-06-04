@@ -1,14 +1,11 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store';
 import {
   setSelectedResident,
   setSelectedDate,
   setFilterType,
-  addMedicationRecord,
-  updateMedicationRecord,
-  addPositionChangeRecord,
   addCareActivity,
-  addNursingNote,
+  updateNursingNote,
   startRecording,
   cancelRecording,
   clearError,
@@ -16,7 +13,9 @@ import {
   fetchResidentNursingRecords,
   createNewMedicationRecord,
   createNewPositionChangeRecord,
+  createNewNursingNote,
   updateMedicationRecordStatus,
+  updateNursingNoteData,
 } from '@/store/slices/nursingSlice';
 import type {
   MedicationRecord as ReduxMedicationRecord,
@@ -31,7 +30,7 @@ import type {
 } from '@/features/nursing/types/nursing.types';
 
 // Data transformation adapters
-const transformMedicationRecord = (
+const transformMedicationRecordToUiType = (
   record: ReduxMedicationRecord
 ): MedicationRecord => ({
   id: record.id,
@@ -46,7 +45,7 @@ const transformMedicationRecord = (
   date: new Date(record.recordedAt),
 });
 
-const transformPositionRecord = (
+const transformPositionRecordToUiType = (
   record: ReduxPositionChangeRecord
 ): PositionChangeRecord => ({
   id: record.id,
@@ -60,12 +59,16 @@ const transformPositionRecord = (
   date: new Date(record.recordedAt),
 });
 
-const transformNursingNote = (record: ReduxNursingNote): NursingNote => ({
+const transformNursingNoteToUiType = (
+  record: ReduxNursingNote
+): NursingNote => ({
   id: record.id,
   seniorId: record.residentId,
   seniorName: record.residentName,
-  category: 'general', // Map noteType to category as needed
+  category: record.noteType as any,
+  title: record.title,
   content: record.content,
+  priority: record.priority,
   recordedBy: record.recordedBy,
   timestamp: new Date(record.recordedAt),
 });
@@ -73,11 +76,12 @@ const transformNursingNote = (record: ReduxNursingNote): NursingNote => ({
 export function useNursing() {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector((state) => state.auth.user);
+
+  const nursingState = useAppSelector((state) => state.nursing);
   const {
-    medicationRecords,
-    positionChangeRecords,
-    careActivities,
-    nursingNotes,
+    medicationRecords: reduxMedicationRecords,
+    positionChangeRecords: reduxPositionChangeRecords,
+    nursingNotes: reduxNursingNotes,
     selectedResident,
     selectedDate,
     filterType,
@@ -89,17 +93,15 @@ export function useNursing() {
     completedMedications,
     missedMedications,
     totalPositionChanges,
-  } = useAppSelector((state) => state.nursing);
+    totalNursingNotes,
+  } = nursingState;
 
-  const caregiverId = currentUser?.id || '8debc4ef-aa7a-4ddd-ae6b-4982fe89dc7b'; // 임시 ID
+  const caregiverId = useMemo(() => {
+    return currentUser?.id || 'anonymous_caregiver';
+  }, [currentUser?.id]);
 
-  // 컴포넌트 마운트 시 오늘의 간병 기록 조회
   useEffect(() => {
-    console.log('🔄 useNursing 초기화 - 오늘의 간병 기록 조회 시작');
-    console.log('👤 현재 사용자:', { currentUser, caregiverId });
-
     if (selectedResident) {
-      // 특정 거주자 기록 조회
       dispatch(
         fetchResidentNursingRecords({
           residentId: selectedResident,
@@ -108,181 +110,123 @@ export function useNursing() {
         })
       );
     } else {
-      // 오늘의 전체 간병 기록 조회
       dispatch(fetchTodayNursingRecords({ caregiverId, date: selectedDate }));
     }
   }, [dispatch, caregiverId, selectedResident, selectedDate]);
 
-  const selectResident = useCallback(
+  const medicationRecords = useMemo(
+    () => reduxMedicationRecords.map(transformMedicationRecordToUiType),
+    [reduxMedicationRecords]
+  );
+  const positionChangeRecords = useMemo(
+    () => reduxPositionChangeRecords.map(transformPositionRecordToUiType),
+    [reduxPositionChangeRecords]
+  );
+  const nursingNotes = useMemo(
+    () => reduxNursingNotes.map(transformNursingNoteToUiType),
+    [reduxNursingNotes]
+  );
+
+  const dispatchCreateNewMedicationRecord = useCallback(
+    async (
+      recordPayload: Omit<
+        ReduxMedicationRecord,
+        'id' | 'recordedAt' | 'residentName' | 'recordedBy'
+      > & { residentId: string }
+    ) => {
+      return dispatch(
+        createNewMedicationRecord({
+          resident_id: recordPayload.residentId,
+          caregiver_id: caregiverId,
+          medication_name: recordPayload.medicationName,
+          dosage: recordPayload.dosage,
+          scheduled_time: recordPayload.scheduledTime,
+          actual_time: recordPayload.actualTime,
+          status: recordPayload.status,
+          notes: recordPayload.notes,
+        })
+      ).unwrap();
+    },
+    [dispatch, caregiverId]
+  );
+
+  const dispatchCreateNewPositionChangeRecord = useCallback(
+    async (
+      recordPayload: Omit<
+        ReduxPositionChangeRecord,
+        'id' | 'recordedAt' | 'residentName' | 'recordedBy'
+      > & { residentId: string }
+    ) => {
+      return dispatch(
+        createNewPositionChangeRecord({
+          resident_id: recordPayload.residentId,
+          caregiver_id: caregiverId,
+          change_time: recordPayload.changeTime,
+          from_position: recordPayload.fromPosition,
+          to_position: recordPayload.toPosition,
+          skin_condition: recordPayload.skinCondition,
+          notes: recordPayload.notes,
+        })
+      ).unwrap();
+    },
+    [dispatch, caregiverId]
+  );
+
+  const dispatchCreateNewNursingNote = useCallback(
+    async (
+      notePayload: Omit<
+        ReduxNursingNote,
+        | 'id'
+        | 'recordedAt'
+        | 'residentName'
+        | 'recordedBy'
+        | 'tags'
+        | 'attachments'
+      > & { residentId: string }
+    ) => {
+      return dispatch(
+        createNewNursingNote({
+          resident_id: notePayload.residentId,
+          caregiver_id: caregiverId,
+          note_type: notePayload.noteType,
+          title: notePayload.title,
+          content: notePayload.content,
+          priority: notePayload.priority,
+        })
+      ).unwrap();
+    },
+    [dispatch, caregiverId]
+  );
+
+  const selectResidentCb = useCallback(
     (residentId: string | null) => {
       dispatch(setSelectedResident(residentId));
     },
     [dispatch]
   );
 
-  const selectDate = useCallback(
+  const selectDateCb = useCallback(
     (date: string) => {
       dispatch(setSelectedDate(date));
     },
     [dispatch]
   );
 
-  const setFilter = useCallback(
+  const setFilterCb = useCallback(
     (filter: typeof filterType) => {
       dispatch(setFilterType(filter));
     },
     [dispatch]
   );
 
-  // 기록 추가 함수들
-  const addMedication = useCallback(
-    (record: Omit<ReduxMedicationRecord, 'id' | 'recordedAt'>) => {
-      dispatch(
-        createNewMedicationRecord({
-          resident_id: record.residentId,
-          caregiver_id: caregiverId,
-          medication_name: record.medicationName,
-          dosage: record.dosage,
-          scheduled_time: record.scheduledTime,
-          actual_time: record.actualTime,
-          status: record.status,
-          notes: record.notes,
-        })
-      );
-    },
-    [dispatch, caregiverId]
-  );
-
-  const updateMedication = useCallback(
-    (id: string, updates: Partial<ReduxMedicationRecord>) => {
-      dispatch(
-        updateMedicationRecordStatus({
-          recordId: id,
-          updates: {
-            status: updates.status,
-            actual_time: updates.actualTime,
-            notes: updates.notes,
-          },
-        })
-      );
-    },
-    [dispatch]
-  );
-
-  const addPositionChange = useCallback(
-    (record: Omit<ReduxPositionChangeRecord, 'id' | 'recordedAt'>) => {
-      dispatch(
-        createNewPositionChangeRecord({
-          resident_id: record.residentId,
-          caregiver_id: caregiverId,
-          change_time: record.changeTime,
-          from_position: record.fromPosition,
-          to_position: record.toPosition,
-          skin_condition: record.skinCondition,
-          notes: record.notes,
-        })
-      );
-    },
-    [dispatch, caregiverId]
-  );
-
-  const addCare = useCallback(
-    (activity: Omit<CareActivity, 'id' | 'recordedAt'>) => {
-      dispatch(
-        addCareActivity({
-          ...activity,
-          recordedBy: currentUser?.name || '익명',
-        })
-      );
-    },
-    [dispatch, currentUser]
-  );
-
-  const addNote = useCallback(
-    (note: Omit<ReduxNursingNote, 'id' | 'recordedAt'>) => {
-      dispatch(
-        addNursingNote({
-          ...note,
-          recordedBy: currentUser?.name || '익명',
-        })
-      );
-    },
-    [dispatch, currentUser]
-  );
-
-  const startNewRecording = useCallback(
-    (type: 'medication' | 'position' | 'care' | 'note', data?: any) => {
-      dispatch(startRecording({ type, data }));
-    },
-    [dispatch]
-  );
-
-  const cancelCurrentRecording = useCallback(() => {
-    dispatch(cancelRecording());
-  }, [dispatch]);
-
-  // 필터링된 데이터
-  const getFilteredRecords = useCallback(() => {
-    const today = selectedDate;
-
-    let filteredMedications = medicationRecords;
-    let filteredPositions = positionChangeRecords;
-    let filteredCare = careActivities;
-    let filteredNotes = nursingNotes;
-
-    if (selectedResident) {
-      filteredMedications = filteredMedications.filter(
-        (r) => r.residentId === selectedResident
-      );
-      filteredPositions = filteredPositions.filter(
-        (r) => r.residentId === selectedResident
-      );
-      filteredCare = filteredCare.filter(
-        (r) => r.residentId === selectedResident
-      );
-      filteredNotes = filteredNotes.filter(
-        (r) => r.residentId === selectedResident
-      );
-    }
-
-    // 날짜 필터링은 이미 서버에서 처리됨
-
-    return {
-      medications: filteredMedications.map(transformMedicationRecord),
-      positions: filteredPositions.map(transformPositionRecord),
-      care: filteredCare,
-      notes: filteredNotes.map(transformNursingNote),
-    };
-  }, [
-    medicationRecords,
-    positionChangeRecords,
-    careActivities,
-    nursingNotes,
-    selectedResident,
-    selectedDate,
-  ]);
-
-  const filteredRecords = getFilteredRecords();
-
-  // 통계 정보
-  const statistics = {
-    totalMedications,
-    completedMedications,
-    missedMedications,
-    totalPositionChanges,
-    completionRate:
-      totalMedications > 0
-        ? Math.round((completedMedications / totalMedications) * 100)
-        : 0,
-  };
-
-  // 오류 정리
-  const clearNursingError = useCallback(() => {
+  const clearErrorCb = useCallback(() => {
     dispatch(clearError());
   }, [dispatch]);
 
   return {
-    // 상태
+    medicationRecords,
+    positionChangeRecords,
+    nursingNotes,
     selectedResident,
     selectedDate,
     filterType,
@@ -290,43 +234,17 @@ export function useNursing() {
     currentRecord,
     isLoading,
     error,
-
-    // 데이터
-    medications: filteredRecords.medications,
-    positions: filteredRecords.positions,
-    care: filteredRecords.care,
-    notes: filteredRecords.notes,
-    statistics,
-
-    // 원본 데이터 (컴포넌트에서 필요시 사용)
-    medicationRecords,
-    positionChangeRecords,
-    careActivities,
-    nursingNotes,
-
-    // 액션
-    selectResident,
-    selectDate,
-    setFilter,
-    addMedication,
-    updateMedication,
-    addPositionChange,
-    addCare,
-    addNote,
-    startNewRecording,
-    cancelCurrentRecording,
-    clearError: clearNursingError,
-
-    // 새로고침
-    refreshTodayRecords: () =>
-      dispatch(fetchTodayNursingRecords({ caregiverId, date: selectedDate })),
-    refreshResidentRecords: (residentId: string) =>
-      dispatch(
-        fetchResidentNursingRecords({
-          residentId,
-          startDate: selectedDate,
-          endDate: selectedDate,
-        })
-      ),
+    totalMedications,
+    completedMedications,
+    missedMedications,
+    totalPositionChanges,
+    totalNursingNotes,
+    addMedicationRecord: dispatchCreateNewMedicationRecord,
+    addPositionChangeRecord: dispatchCreateNewPositionChangeRecord,
+    addNursingNote: dispatchCreateNewNursingNote,
+    selectResident: selectResidentCb,
+    selectDate: selectDateCb,
+    setFilter: setFilterCb,
+    clearError: clearErrorCb,
   };
 }

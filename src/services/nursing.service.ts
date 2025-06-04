@@ -107,14 +107,66 @@ export interface PositionChangeRecordWithResident extends PositionChangeRecord {
   } | null;
 }
 
+export interface NursingNoteRecord {
+  id: string;
+  resident_id: string | null;
+  caregiver_id: string | null;
+  note_type:
+    | 'DAILY_OBSERVATION'
+    | 'INCIDENT'
+    | 'BEHAVIOR'
+    | 'MEDICAL'
+    | 'FAMILY_COMMUNICATION'
+    | null;
+  title: string;
+  content: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' | null;
+  tags: string[] | null;
+  attachments: any | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface NursingNoteListItem {
+  id: string;
+  resident_id: string | null;
+  resident_name?: string;
+  caregiver_id: string | null;
+  caregiver_name?: string;
+  note_type: string | null;
+  title: string;
+  content: string;
+  priority: string | null;
+  tags: string[] | null;
+  attachments: any | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface NursingNoteWithResident extends NursingNoteRecord {
+  resident: {
+    id: string;
+    name: string;
+    room_number: string | null;
+    age: number | null;
+  } | null;
+  caregiver: {
+    id: string;
+    name: string;
+    role: string;
+  } | null;
+}
+
 // 종합 간병 기록 정보
 export interface NursingRecordsInfo {
   medicationRecords: MedicationRecordWithResident[];
   positionChangeRecords: PositionChangeRecordWithResident[];
+  nursingNotes: NursingNoteWithResident[];
   totalMedications: number;
   completedMedications: number;
   missedMedications: number;
   totalPositionChanges: number;
+  totalNursingNotes: number;
 }
 
 export class NursingService {
@@ -742,6 +794,193 @@ export class NursingService {
     }
   }
 
+  // 간호 기록 조회
+  static async getNursingNotes(params?: {
+    residentId?: string;
+    caregiverId?: string;
+    noteType?: string;
+    priority?: string;
+    date?: string;
+    page?: number;
+    size?: number;
+  }): Promise<ApiResponse<PagedResponse<NursingNoteListItem>>> {
+    try {
+      const {
+        page = 1,
+        size = 20,
+        residentId,
+        caregiverId,
+        noteType,
+        priority,
+        date,
+      } = params || {};
+      const from = (page - 1) * size;
+      const to = from + size - 1;
+
+      let query = supabase
+        .from('nursing_notes')
+        .select(
+          `
+          *,
+          residents(name),
+          staff_profiles(name)
+        `,
+          { count: 'exact' }
+        )
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (residentId) {
+        query = query.eq('resident_id', residentId);
+      }
+
+      if (caregiverId) {
+        query = query.eq('caregiver_id', caregiverId);
+      }
+
+      if (noteType) {
+        query = query.eq('note_type', noteType);
+      }
+
+      if (priority) {
+        query = query.eq('priority', priority);
+      }
+
+      if (date) {
+        const startDate = `${date}T00:00:00.000Z`;
+        const endDate = `${date}T23:59:59.999Z`;
+        query = query.gte('created_at', startDate).lte('created_at', endDate);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      const totalElements = count || 0;
+      const totalPages = Math.ceil(totalElements / size);
+
+      const notes: NursingNoteListItem[] = (data || []).map((note) => ({
+        id: note.id,
+        resident_id: note.resident_id,
+        resident_name: note.residents?.name,
+        caregiver_id: note.caregiver_id,
+        caregiver_name: note.staff_profiles?.name,
+        note_type: note.note_type,
+        title: note.title,
+        content: note.content,
+        priority: note.priority,
+        tags: note.tags,
+        attachments: note.attachments,
+        created_at: note.created_at,
+        updated_at: note.updated_at,
+      }));
+
+      return {
+        code: 'SUCCESS',
+        message: '간호 기록 조회 성공',
+        timestamp: new Date().toISOString(),
+        data: {
+          content: notes,
+          page: {
+            size,
+            number: page,
+            totalElements,
+            totalPages,
+          },
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching nursing notes:', error);
+      throw {
+        code: 'NURSING_009',
+        message: '간호 기록 조회 실패',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 간호 기록 생성
+  static async createNursingNote(
+    noteData: Omit<NursingNoteRecord, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<ApiResponse<NursingNoteRecord>> {
+    try {
+      console.log('➕ NursingService.createNursingNote 호출됨:', noteData);
+
+      const { data, error } = await supabase
+        .from('nursing_notes')
+        .insert([noteData])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ 간호 기록 생성 성공:', data);
+
+      return {
+        code: 'SUCCESS',
+        message: '간호 기록 생성 성공',
+        timestamp: new Date().toISOString(),
+        data,
+      };
+    } catch (error) {
+      console.error('💥 NursingService.createNursingNote 오류:', error);
+      throw {
+        code: 'NURSING_010',
+        message: '간호 기록 생성 실패',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 간호 기록 업데이트
+  static async updateNursingNote(
+    noteId: string,
+    updates: Partial<NursingNoteRecord>
+  ): Promise<ApiResponse<NursingNoteRecord>> {
+    try {
+      console.log('🔄 NursingService.updateNursingNote 호출됨:', {
+        noteId,
+        updates,
+      });
+
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from('nursing_notes')
+        .update(updateData)
+        .eq('id', noteId)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('✅ 간호 기록 업데이트 성공:', data);
+
+      return {
+        code: 'SUCCESS',
+        message: '간호 기록 업데이트 성공',
+        timestamp: new Date().toISOString(),
+        data,
+      };
+    } catch (error) {
+      console.error('💥 NursingService.updateNursingNote 오류:', error);
+      throw {
+        code: 'NURSING_011',
+        message: '간호 기록 업데이트 실패',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
   // 오늘의 간병 기록 조회
   static async getTodayNursingRecords(
     caregiverId: string,
@@ -793,15 +1032,37 @@ export class NursingService {
         throw posError;
       }
 
+      // 간호 기록 조회
+      const { data: nursingNotes, error: notesError } = await supabase
+        .from('nursing_notes')
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
+        .eq('caregiver_id', caregiverId)
+        .gte('created_at', `${targetDate}T00:00:00.000Z`)
+        .lt('created_at', `${targetDate}T23:59:59.999Z`)
+        .order('created_at', { ascending: false });
+
+      if (notesError) {
+        throw notesError;
+      }
+
       console.log('✅ 간병 기록 조회 성공:', {
         medicationRecords,
         positionRecords,
+        nursingNotes,
       });
 
       const medicationRecordsWithResident = (medicationRecords ||
         []) as MedicationRecordWithResident[];
       const positionRecordsWithResident = (positionRecords ||
         []) as PositionChangeRecordWithResident[];
+      const nursingNotesWithResident = (nursingNotes ||
+        []) as NursingNoteWithResident[];
 
       const totalMedications = medicationRecordsWithResident.length;
       const completedMedications = medicationRecordsWithResident.filter(
@@ -811,6 +1072,7 @@ export class NursingService {
         (r) => r.status === 'MISSED'
       ).length;
       const totalPositionChanges = positionRecordsWithResident.length;
+      const totalNursingNotes = nursingNotesWithResident.length;
 
       const result = {
         code: 'SUCCESS',
@@ -819,10 +1081,12 @@ export class NursingService {
         data: {
           medicationRecords: medicationRecordsWithResident,
           positionChangeRecords: positionRecordsWithResident,
+          nursingNotes: nursingNotesWithResident,
           totalMedications,
           completedMedications,
           missedMedications,
           totalPositionChanges,
+          totalNursingNotes,
         },
       };
 
@@ -892,15 +1156,37 @@ export class NursingService {
         throw posError;
       }
 
+      // 간호 기록 조회
+      const { data: nursingNotes, error: notesError } = await supabase
+        .from('nursing_notes')
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
+        .eq('resident_id', residentId)
+        .gte('created_at', `${start}T00:00:00.000Z`)
+        .lte('created_at', `${end}T23:59:59.999Z`)
+        .order('created_at', { ascending: false });
+
+      if (notesError) {
+        throw notesError;
+      }
+
       console.log('✅ 거주자 간병 기록 조회 성공:', {
         medicationRecords,
         positionRecords,
+        nursingNotes,
       });
 
       const medicationRecordsWithResident = (medicationRecords ||
         []) as MedicationRecordWithResident[];
       const positionRecordsWithResident = (positionRecords ||
         []) as PositionChangeRecordWithResident[];
+      const nursingNotesWithResident = (nursingNotes ||
+        []) as NursingNoteWithResident[];
 
       const totalMedications = medicationRecordsWithResident.length;
       const completedMedications = medicationRecordsWithResident.filter(
@@ -910,6 +1196,7 @@ export class NursingService {
         (r) => r.status === 'MISSED'
       ).length;
       const totalPositionChanges = positionRecordsWithResident.length;
+      const totalNursingNotes = nursingNotesWithResident.length;
 
       return {
         code: 'SUCCESS',
@@ -918,10 +1205,12 @@ export class NursingService {
         data: {
           medicationRecords: medicationRecordsWithResident,
           positionChangeRecords: positionRecordsWithResident,
+          nursingNotes: nursingNotesWithResident,
           totalMedications,
           completedMedications,
           missedMedications,
           totalPositionChanges,
+          totalNursingNotes,
         },
       };
     } catch (error) {

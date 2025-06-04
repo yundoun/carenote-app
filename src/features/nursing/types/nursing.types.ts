@@ -28,7 +28,9 @@ export interface NursingNote {
   seniorId: string;
   seniorName: string;
   category: 'general' | 'medication' | 'behavior' | 'health' | 'family';
+  title: string;
   content: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   recordedBy: string;
   timestamp: Date;
 }
