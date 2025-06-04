@@ -23,18 +23,6 @@ export interface PositionChangeRecord {
   date: Date;
 }
 
-export interface AppointmentRecord {
-  id: string;
-  seniorId: string;
-  seniorName: string;
-  type: 'hospital' | 'visit' | 'outing' | 'therapy';
-  description: string;
-  scheduledTime: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
-  notes?: string;
-  date: Date;
-}
-
 export interface NursingNote {
   id: string;
   seniorId: string;
@@ -45,4 +33,4 @@ export interface NursingNote {
   timestamp: Date;
 }
 
-export type RecordType = 'medication' | 'position' | 'appointment' | 'note';
+export type RecordType = 'medication' | 'position' | 'note';

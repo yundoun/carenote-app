@@ -12,7 +12,6 @@ import {
 import {
   MedicationRecords,
   PositionChange,
-  AppointmentSchedule,
   NursingNotes,
   AddRecordForm,
   useNursingRecords,
@@ -22,13 +21,7 @@ export default function NursingPage() {
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
   const [isAddingRecord, setIsAddingRecord] = useState(false);
 
-  const {
-    medications,
-    positions,
-    appointments,
-    notes,
-    isLoading,
-  } = useNursingRecords();
+  const { medications, positions, notes, isLoading } = useNursingRecords();
 
   if (isLoading) {
     return <div className="container mx-auto p-4">로딩 중...</div>;
@@ -54,13 +47,16 @@ export default function NursingPage() {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="medication" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+      <Tabs defaultValue="notes" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="notes">간호 기록</TabsTrigger>
           <TabsTrigger value="medication">복약 기록</TabsTrigger>
           <TabsTrigger value="position">체위 변경</TabsTrigger>
-          <TabsTrigger value="schedule">일정 관리</TabsTrigger>
-          <TabsTrigger value="notes">간호 기록</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="notes" className="mt-0 space-y-4">
+          <NursingNotes notes={notes} />
+        </TabsContent>
 
         <TabsContent value="medication" className="mt-0 space-y-4">
           <MedicationRecords records={medications} />
@@ -68,14 +64,6 @@ export default function NursingPage() {
 
         <TabsContent value="position" className="mt-0 space-y-4">
           <PositionChange records={positions} />
-        </TabsContent>
-
-        <TabsContent value="schedule" className="mt-0 space-y-4">
-          <AppointmentSchedule records={appointments} />
-        </TabsContent>
-
-        <TabsContent value="notes" className="mt-0 space-y-4">
-          <NursingNotes notes={notes} />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useResidents } from '@/hooks/useResidents';
 import { ResidentsService } from '@/services/residents.service';
 import { AnnouncementsService } from '@/services/announcements.service';
+import type { ResidentListItem } from '@/services/residents.service';
 
 export function DatabaseTest() {
   const [testResults, setTestResults] = useState<{
@@ -16,7 +16,25 @@ export function DatabaseTest() {
     connectionTest: '테스트 준비 중...',
   });
 
-  const { residents, loading, error } = useResidents({ page: 1, size: 5 });
+  const [residents, setResidents] = useState<ResidentListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchResidentsForTest = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await ResidentsService.getResidentList({
+        page: 1,
+        size: 5,
+      });
+      setResidents(response.data.content);
+    } catch (err: any) {
+      setError(err.message || '거주자 목록을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const testConnection = async () => {
     try {
@@ -61,6 +79,7 @@ export function DatabaseTest() {
 
   useEffect(() => {
     testConnection();
+    fetchResidentsForTest();
   }, []);
 
   return (

@@ -8,8 +8,6 @@ import {
   updateMedicationRecord,
   addPositionChangeRecord,
   addCareActivity,
-  addAppointment,
-  updateAppointment,
   addNursingNote,
   startRecording,
   cancelRecording,
@@ -24,13 +22,11 @@ import type {
   MedicationRecord as ReduxMedicationRecord,
   PositionChangeRecord as ReduxPositionChangeRecord,
   CareActivity,
-  Appointment as ReduxAppointment,
   NursingNote as ReduxNursingNote,
 } from '@/store/slices/nursingSlice';
 import type {
   MedicationRecord,
   PositionChangeRecord,
-  AppointmentRecord,
   NursingNote,
 } from '@/features/nursing/types/nursing.types';
 
@@ -64,25 +60,6 @@ const transformPositionRecord = (
   date: new Date(record.recordedAt),
 });
 
-const transformAppointment = (record: ReduxAppointment): AppointmentRecord => ({
-  id: record.id,
-  seniorId: record.residentId,
-  seniorName: record.residentName,
-  type: record.type.toLowerCase() as
-    | 'hospital'
-    | 'visit'
-    | 'outing'
-    | 'therapy',
-  description: record.title,
-  scheduledTime: record.scheduledTime,
-  status: record.status.toLowerCase() as
-    | 'scheduled'
-    | 'completed'
-    | 'cancelled',
-  notes: record.notes,
-  date: new Date(record.scheduledDate),
-});
-
 const transformNursingNote = (record: ReduxNursingNote): NursingNote => ({
   id: record.id,
   seniorId: record.residentId,
@@ -100,7 +77,6 @@ export function useNursing() {
     medicationRecords,
     positionChangeRecords,
     careActivities,
-    appointments,
     nursingNotes,
     selectedResident,
     selectedDate,
@@ -222,20 +198,6 @@ export function useNursing() {
     [dispatch, currentUser]
   );
 
-  const addNewAppointment = useCallback(
-    (appointment: Omit<ReduxAppointment, 'id'>) => {
-      dispatch(addAppointment(appointment));
-    },
-    [dispatch]
-  );
-
-  const updateExistingAppointment = useCallback(
-    (id: string, updates: Partial<ReduxAppointment>) => {
-      dispatch(updateAppointment({ id, updates }));
-    },
-    [dispatch]
-  );
-
   const addNote = useCallback(
     (note: Omit<ReduxNursingNote, 'id' | 'recordedAt'>) => {
       dispatch(
@@ -266,7 +228,6 @@ export function useNursing() {
     let filteredMedications = medicationRecords;
     let filteredPositions = positionChangeRecords;
     let filteredCare = careActivities;
-    let filteredAppointments = appointments;
     let filteredNotes = nursingNotes;
 
     if (selectedResident) {
@@ -277,9 +238,6 @@ export function useNursing() {
         (r) => r.residentId === selectedResident
       );
       filteredCare = filteredCare.filter(
-        (r) => r.residentId === selectedResident
-      );
-      filteredAppointments = filteredAppointments.filter(
         (r) => r.residentId === selectedResident
       );
       filteredNotes = filteredNotes.filter(
@@ -293,14 +251,12 @@ export function useNursing() {
       medications: filteredMedications.map(transformMedicationRecord),
       positions: filteredPositions.map(transformPositionRecord),
       care: filteredCare,
-      appointments: filteredAppointments.map(transformAppointment),
       notes: filteredNotes.map(transformNursingNote),
     };
   }, [
     medicationRecords,
     positionChangeRecords,
     careActivities,
-    appointments,
     nursingNotes,
     selectedResident,
     selectedDate,
@@ -339,7 +295,6 @@ export function useNursing() {
     medications: filteredRecords.medications,
     positions: filteredRecords.positions,
     care: filteredRecords.care,
-    appointments: filteredRecords.appointments,
     notes: filteredRecords.notes,
     statistics,
 
@@ -357,8 +312,6 @@ export function useNursing() {
     updateMedication,
     addPositionChange,
     addCare,
-    addNewAppointment,
-    updateExistingAppointment,
     addNote,
     startNewRecording,
     cancelCurrentRecording,

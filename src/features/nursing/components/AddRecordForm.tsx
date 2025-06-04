@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RecordType } from '../../types/nursing.types';
+import { RecordType } from '../types/nursing.types';
 
 interface AddRecordFormProps {
   onSave: () => void;
@@ -18,7 +18,6 @@ interface AddRecordFormProps {
 
 export function AddRecordForm({ onSave }: AddRecordFormProps) {
   const [recordType, setRecordType] = useState<RecordType | ''>('');
-  const [formData, setFormData] = useState<any>({});
 
   const handleValueChange = (value: string) => {
     setRecordType(value as RecordType | '');
