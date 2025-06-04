@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,10 +13,12 @@ import {
   useResidents,
   ResidentDetail,
 } from '@/features/residents';
+import { useAppDispatch } from '@/store';
+import { fetchResidents } from '@/store/slices/residentsSlice';
 
 export default function ResidentsPage() {
-  const [selectedResident, setSelectedResident] =
-    useState<ResidentDetail | null>(null);
+  const [selectedResident, setSelectedResident] = useState<any>(null);
+  const dispatch = useAppDispatch();
 
   const {
     residents,
@@ -24,11 +26,41 @@ export default function ResidentsPage() {
     urgentCases,
     searchQuery,
     setSearchQuery,
+    isLoading,
+    error,
   } = useResidents();
 
-  const handleResidentClick = (resident: ResidentDetail) => {
+  // 컴포넌트 마운트 시 주민 데이터 가져오기
+  useEffect(() => {
+    console.log('🏠 ResidentsPage 마운트됨 - fetchResidents 호출 시작');
+    dispatch(fetchResidents());
+  }, [dispatch]);
+
+  const handleResidentClick = (resident: any) => {
     setSelectedResident(resident);
   };
+
+  // 로딩 상태 표시
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">데이터를 불러오는 중...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 상태 표시
+  if (error) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-red-500">오류: {error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4">

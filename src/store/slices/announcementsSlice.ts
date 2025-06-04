@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { AnnouncementsService, type AnnouncementListItem } from '@/services/announcements.service';
 
 export interface Announcement {
   id: string;
@@ -11,7 +12,7 @@ export interface Announcement {
   attachments: Array<{
     name: string;
     url: string;
-    type: 'PDF' | 'IMAGE' | 'VIDEO';
+    type?: 'PDF' | 'IMAGE' | 'VIDEO';
   }>;
   createdAt: string;
   readCount: number;
@@ -19,6 +20,36 @@ export interface Announcement {
   isRead: boolean;
   readAt?: string;
 }
+
+// API 비동기 액션들
+export const fetchAnnouncements = createAsyncThunk(
+  'announcements/fetchAnnouncements',
+  async (params?: {
+    type?: 'HEADQUARTERS' | 'FACILITY' | 'URGENT';
+    important?: boolean;
+    page?: number;
+    size?: number;
+  }) => {
+    const response = await AnnouncementsService.getAnnouncements(params);
+    return response.data;
+  }
+);
+
+export const fetchAnnouncementDetail = createAsyncThunk(
+  'announcements/fetchAnnouncementDetail',
+  async (announcementId: string) => {
+    const response = await AnnouncementsService.getAnnouncementDetail(announcementId);
+    return response.data;
+  }
+);
+
+export const markAnnouncementAsRead = createAsyncThunk(
+  'announcements/markAsRead',
+  async ({ announcementId, userId }: { announcementId: string; userId: string }) => {
+    await AnnouncementsService.markAsRead(announcementId, userId);
+    return announcementId;
+  }
+);
 
 export interface AnnouncementsState {
   announcements: Announcement[];
@@ -36,61 +67,27 @@ export interface AnnouncementsState {
   };
 }
 
-const mockAnnouncements: Announcement[] = [
-  {
-    id: 'notice-001',
-    type: 'HEADQUARTERS',
-    category: 'POLICY',
-    title: '요양보호사 근무 지침 개정 안내',
-    content: '2025년 6월 1일부터 새로운 근무 지침이 적용됩니다. 주요 변경사항을 확인해주세요.',
-    author: '본사 인사팀',
-    important: true,
-    attachments: [
-      {
-        name: '근무지침_개정안.pdf',
-        url: 'https://cdn.carenote.com/notices/doc-001.pdf',
-        type: 'PDF',
-      },
-    ],
-    createdAt: '2025-05-25T09:00:00Z',
-    readCount: 145,
-    targetFacilities: ['all'],
-    isRead: false,
-  },
-  {
-    id: 'notice-002',
-    type: 'FACILITY',
-    category: 'EDUCATION',
-    title: '6월 정기 교육 일정 안내',
-    content: '6월 정기 교육 일정을 안내드립니다.',
-    author: '교육팀',
-    important: false,
-    attachments: [],
-    createdAt: '2025-05-28T14:00:00Z',
-    readCount: 67,
-    targetFacilities: ['facility-001'],
-    isRead: true,
-    readAt: '2025-05-28T15:30:00Z',
-  },
-  {
-    id: 'notice-003',
-    type: 'URGENT',
-    category: 'SAFETY',
-    title: '코로나19 방역 지침 강화',
-    content: '최근 감염 확산에 따른 방역 지침이 강화되었습니다.',
-    author: '방역팀',
-    important: true,
-    attachments: [],
-    createdAt: '2025-05-29T08:00:00Z',
-    readCount: 23,
-    targetFacilities: ['all'],
-    isRead: false,
-  },
-];
+// API 응답을 Redux 타입으로 변환하는 함수
+function transformApiAnnouncement(apiAnnouncement: AnnouncementListItem): Announcement {
+  return {
+    id: apiAnnouncement.id,
+    type: (apiAnnouncement.type as 'HEADQUARTERS' | 'FACILITY' | 'URGENT') || 'FACILITY',
+    category: (apiAnnouncement.category as 'POLICY' | 'EDUCATION' | 'SCHEDULE' | 'SAFETY' | 'OTHER') || 'OTHER',
+    title: apiAnnouncement.title,
+    content: apiAnnouncement.content,
+    author: apiAnnouncement.author || '',
+    important: apiAnnouncement.important || false,
+    attachments: apiAnnouncement.attachments || [],
+    createdAt: apiAnnouncement.created_at || '',
+    readCount: apiAnnouncement.read_count || 0,
+    targetFacilities: apiAnnouncement.target_facilities || [],
+    isRead: false, // 추후 읽음 상태 API와 연동
+  };
+}
 
 const initialState: AnnouncementsState = {
-  announcements: mockAnnouncements,
-  filteredAnnouncements: mockAnnouncements,
+  announcements: [],
+  filteredAnnouncements: [],
   filterType: 'all',
   selectedAnnouncement: null,
   searchQuery: '',
@@ -99,8 +96,8 @@ const initialState: AnnouncementsState = {
   pagination: {
     page: 1,
     size: 20,
-    totalElements: mockAnnouncements.length,
-    totalPages: 1,
+    totalElements: 0,
+    totalPages: 0,
   },
 };
 
@@ -141,6 +138,53 @@ const announcementsSlice = createSlice({
     setPagination: (state, action: PayloadAction<Partial<AnnouncementsState['pagination']>>) => {
       state.pagination = { ...state.pagination, ...action.payload };
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      // fetchAnnouncements
+      .addCase(fetchAnnouncements.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchAnnouncements.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const transformedAnnouncements = action.payload.content.map(transformApiAnnouncement);
+        state.announcements = transformedAnnouncements;
+        state.filteredAnnouncements = filterAnnouncements(transformedAnnouncements, state.filterType, state.searchQuery);
+        state.pagination = action.payload.page;
+      })
+      .addCase(fetchAnnouncements.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || '공지사항 조회에 실패했습니다.';
+      })
+      // fetchAnnouncementDetail
+      .addCase(fetchAnnouncementDetail.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchAnnouncementDetail.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.selectedAnnouncement = transformApiAnnouncement(action.payload);
+      })
+      .addCase(fetchAnnouncementDetail.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || '공지사항 상세 조회에 실패했습니다.';
+      })
+      // markAnnouncementAsRead
+      .addCase(markAnnouncementAsRead.fulfilled, (state, action) => {
+        const announcementId = action.payload;
+        const announcement = state.announcements.find(a => a.id === announcementId);
+        if (announcement && !announcement.isRead) {
+          announcement.isRead = true;
+          announcement.readAt = new Date().toISOString();
+          announcement.readCount += 1;
+        }
+        if (state.selectedAnnouncement?.id === announcementId) {
+          state.selectedAnnouncement.isRead = true;
+          state.selectedAnnouncement.readAt = new Date().toISOString();
+          state.selectedAnnouncement.readCount += 1;
+        }
+      });
   },
 });
 
@@ -189,5 +233,7 @@ export const {
   setError,
   setPagination,
 } = announcementsSlice.actions;
+
+// 비동기 액션들은 이미 위에서 export되었으므로 별도 export 불필요
 
 export default announcementsSlice.reducer;

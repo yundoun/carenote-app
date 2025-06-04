@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { EducationService, type EducationMaterialListItem, type EducationCategoryWithMaterials } from '@/services/education.service';
 
 export interface EducationCategory {
   id: string;
@@ -69,100 +70,109 @@ export interface EducationState {
   };
 }
 
-const mockCategories: EducationCategory[] = [
-  {
-    id: 'cat-001',
-    name: '주요업무',
-    subcategories: ['요일별 업무', '일상업무', '시간대별 업무'],
-  },
-  {
-    id: 'cat-002',
-    name: '케어기술',
-    subcategories: ['체위변경', '식사보조', '목욕보조', '이동보조'],
-  },
-  {
-    id: 'cat-003',
-    name: '기록지 입력방법',
-    subcategories: ['간호기록', '투약기록', '활동기록'],
-  },
-  {
-    id: 'cat-004',
-    name: '안전관리',
-    subcategories: ['낙상예방', '감염관리', '응급처치'],
-  },
-];
+// API 비동기 액션들
+export const fetchEducationCategories = createAsyncThunk(
+  'education/fetchCategories',
+  async () => {
+    const response = await EducationService.getCategories();
+    return response.data;
+  }
+);
 
-const mockMaterials: EducationMaterial[] = [
-  {
-    id: 'edu-001',
-    title: '체위변경 기본 방법',
-    category: '케어기술',
-    subcategory: '체위변경',
-    type: 'VIDEO',
+export const fetchEducationMaterials = createAsyncThunk(
+  'education/fetchMaterials',
+  async (params?: {
+    categoryId?: string;
+    type?: 'VIDEO' | 'DOCUMENT' | 'QUIZ' | 'INTERACTIVE';
+    searchQuery?: string;
+    page?: number;
+    size?: number;
+    userId?: string;
+  }) => {
+    const response = await EducationService.getMaterials(params);
+    return response.data;
+  }
+);
+
+export const fetchEducationMaterialDetail = createAsyncThunk(
+  'education/fetchMaterialDetail',
+  async ({ materialId, userId }: { materialId: string; userId?: string }) => {
+    const response = await EducationService.getMaterialDetail(materialId, userId);
+    return response.data;
+  }
+);
+
+export const updateLearningProgress = createAsyncThunk(
+  'education/updateProgress',
+  async ({
+    materialId,
+    userId,
+    progressData,
+  }: {
+    materialId: string;
+    userId: string;
+    progressData: {
+      lastPosition?: number;
+      completionRate?: number;
+      completed?: boolean;
+    };
+  }) => {
+    const response = await EducationService.updateLearningProgress(materialId, userId, progressData);
+    return { materialId, progressData: response.data };
+  }
+);
+
+export const fetchUserLearningStats = createAsyncThunk(
+  'education/fetchUserStats',
+  async (userId: string) => {
+    const response = await EducationService.getUserLearningStats(userId);
+    return response.data;
+  }
+);
+
+// API 응답을 Redux 타입으로 변환하는 함수
+function transformApiCategory(apiCategory: EducationCategoryWithMaterials): EducationCategory {
+  return {
+    id: apiCategory.id,
+    name: apiCategory.name,
+    subcategories: apiCategory.subcategories || [],
+  };
+}
+
+function transformApiMaterial(apiMaterial: EducationMaterialListItem): EducationMaterial {
+  return {
+    id: apiMaterial.id,
+    title: apiMaterial.title,
+    category: apiMaterial.category_name || '',
+    subcategory: undefined, // API에서 제공되지 않음
+    type: (apiMaterial.type as 'VIDEO' | 'DOCUMENT' | 'INTERACTIVE' | 'QUIZ') || 'DOCUMENT',
     content: {
-      url: 'https://cdn.carenote.com/videos/edu-001.mp4',
-      duration: 600,
-      subtitles: 'https://cdn.carenote.com/subtitles/edu-001.vtt',
+      url: apiMaterial.content_url || '',
+      duration: apiMaterial.duration || undefined,
     },
-    description: '체위변경의 기본 원칙과 방법을 설명합니다.',
-    thumbnail: 'https://cdn.carenote.com/edu/thumb-001.jpg',
-    tags: ['체위변경', '욕창예방', '기본기술'],
-    viewCount: 1523,
-    learningObjectives: [
-      '체위변경의 중요성 이해',
-      '올바른 체위변경 방법 습득',
-      '욕창 예방 방법 학습',
-    ],
-    relatedMaterials: ['edu-002', 'edu-003'],
-    difficulty: 'BEGINNER',
-    createdAt: '2025-03-15T00:00:00Z',
-    updatedAt: '2025-03-15T00:00:00Z',
-    userProgress: {
-      completed: false,
-      lastPosition: 120,
-      completionRate: 20,
-      lastViewedAt: '2025-05-28T14:30:00Z',
-      attempts: 1,
-    },
-  },
-  {
-    id: 'edu-002',
-    title: '투약 기록 작성법',
-    category: '기록지 입력방법',
-    subcategory: '투약기록',
-    type: 'DOCUMENT',
-    content: {
-      url: 'https://cdn.carenote.com/docs/edu-002.pdf',
-      downloadUrl: 'https://cdn.carenote.com/downloads/edu-002.pdf',
-    },
-    description: '정확한 투약 기록 작성 방법을 학습합니다.',
-    thumbnail: 'https://cdn.carenote.com/edu/thumb-002.jpg',
-    tags: ['투약', '기록작성', '안전'],
-    viewCount: 892,
-    learningObjectives: [
-      '투약 기록의 중요성 이해',
-      '정확한 기록 작성 방법 습득',
-      '오류 예방 방법 학습',
-    ],
-    relatedMaterials: ['edu-001'],
-    difficulty: 'INTERMEDIATE',
-    createdAt: '2025-03-20T00:00:00Z',
-    updatedAt: '2025-03-20T00:00:00Z',
-    userProgress: {
-      completed: true,
-      lastPosition: 0,
-      completionRate: 100,
-      lastViewedAt: '2025-05-25T10:00:00Z',
-      attempts: 2,
-      score: 85,
-    },
-  },
-];
+    description: apiMaterial.description || '',
+    thumbnail: apiMaterial.thumbnail || undefined,
+    tags: apiMaterial.tags || [],
+    viewCount: apiMaterial.view_count || 0,
+    learningObjectives: apiMaterial.learning_objectives || [],
+    relatedMaterials: [], // API에서 제공되지 않음
+    difficulty: 'BEGINNER' as const, // API에서 제공되지 않음
+    createdAt: apiMaterial.created_at || '',
+    updatedAt: apiMaterial.updated_at || '',
+    userProgress: apiMaterial.user_progress ? {
+      completed: apiMaterial.user_progress.completed,
+      lastPosition: apiMaterial.user_progress.last_position,
+      completionRate: apiMaterial.user_progress.completion_rate,
+      lastViewedAt: apiMaterial.user_progress.completed_at || undefined,
+    } : undefined,
+  };
+}
+
 
 const initialState: EducationState = {
-  categories: mockCategories,
-  materials: mockMaterials,
-  filteredMaterials: mockMaterials,
+  categories: [],
+  materials: [],
+  filteredMaterials: [],
   selectedMaterial: null,
   currentCategory: null,
   searchQuery: '',
@@ -174,8 +184,8 @@ const initialState: EducationState = {
   pagination: {
     page: 1,
     size: 20,
-    totalElements: mockMaterials.length,
-    totalPages: 1,
+    totalElements: 0,
+    totalPages: 0,
   },
 };
 
@@ -243,6 +253,63 @@ const educationSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      // fetchEducationCategories
+      .addCase(fetchEducationCategories.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchEducationCategories.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.categories = action.payload.map(transformApiCategory);
+      })
+      .addCase(fetchEducationCategories.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || '교육 카테고리 조회에 실패했습니다.';
+      })
+      // fetchEducationMaterials
+      .addCase(fetchEducationMaterials.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchEducationMaterials.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const transformedMaterials = action.payload.content.map(transformApiMaterial);
+        state.materials = transformedMaterials;
+        state.filteredMaterials = filterMaterials(state);
+        state.pagination = action.payload.page;
+      })
+      .addCase(fetchEducationMaterials.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || '교육 자료 조회에 실패했습니다.';
+      })
+      // fetchEducationMaterialDetail
+      .addCase(fetchEducationMaterialDetail.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchEducationMaterialDetail.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.selectedMaterial = transformApiMaterial(action.payload);
+      })
+      .addCase(fetchEducationMaterialDetail.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || '교육 자료 상세 조회에 실패했습니다.';
+      })
+      // updateLearningProgress
+      .addCase(updateLearningProgress.fulfilled, (state, action) => {
+        const { materialId } = action.payload;
+        const material = state.materials.find(m => m.id === materialId);
+        if (material && material.userProgress) {
+          // API 응답에 따라 업데이트
+          material.userProgress.lastViewedAt = new Date().toISOString();
+        }
+        if (state.selectedMaterial?.id === materialId && state.selectedMaterial.userProgress) {
+          state.selectedMaterial.userProgress.lastViewedAt = new Date().toISOString();
+        }
+      });
   },
 });
 
@@ -316,5 +383,7 @@ export const {
   setLoading,
   setError,
 } = educationSlice.actions;
+
+// 비동기 액션들은 이미 위에서 export되었으므로 별도 export 불필요
 
 export default educationSlice.reducer;

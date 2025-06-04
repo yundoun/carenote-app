@@ -1,10 +1,17 @@
 import { useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store';
-import { setSearchQuery, setSelectedResident, addRecentNote, updateVitalSigns } from '@/store/slices/residentsSlice';
-import { ResidentDetail } from '../types/residents.types';
+import {
+  setSearchQuery,
+  setSelectedResident,
+  addRecentNote,
+  updateVitalSigns,
+  type ResidentDetail,
+} from '@/store/slices/residentsSlice';
 
 export function useResidents() {
   const dispatch = useAppDispatch();
+  const residentsState = useAppSelector((state) => state.residents);
+
   const {
     residents,
     filteredResidents,
@@ -12,24 +19,44 @@ export function useResidents() {
     selectedResident,
     searchQuery,
     isLoading,
-    error
-  } = useAppSelector((state) => state.residents);
+    error,
+  } = residentsState;
 
-  const updateSearchQuery = useCallback((query: string) => {
-    dispatch(setSearchQuery(query));
-  }, [dispatch]);
+  console.log('🎣 useResidents 훅 - Store 상태:');
+  console.log('  - residents:', residents?.length || 0, '명');
+  console.log('  - filteredResidents:', filteredResidents?.length || 0, '명');
+  console.log('  - urgentCases:', urgentCases?.length || 0, '명');
+  console.log('  - isLoading:', isLoading);
+  console.log('  - error:', error);
+  console.log('  - 전체 state:', residentsState);
 
-  const selectResident = useCallback((resident: ResidentDetail | null) => {
-    dispatch(setSelectedResident(resident));
-  }, [dispatch]);
+  const updateSearchQuery = useCallback(
+    (query: string) => {
+      dispatch(setSearchQuery(query));
+    },
+    [dispatch]
+  );
 
-  const addNote = useCallback((residentId: string, note: string) => {
-    dispatch(addRecentNote({ residentId, note }));
-  }, [dispatch]);
+  const selectResident = useCallback(
+    (resident: ResidentDetail | null) => {
+      dispatch(setSelectedResident(resident));
+    },
+    [dispatch]
+  );
 
-  const updateVitals = useCallback((residentId: string, vitalSigns: ResidentDetail['vitalSigns']) => {
-    dispatch(updateVitalSigns({ residentId, vitalSigns }));
-  }, [dispatch]);
+  const addNote = useCallback(
+    (residentId: string, note: string) => {
+      dispatch(addRecentNote({ residentId, note }));
+    },
+    [dispatch]
+  );
+
+  const updateVitals = useCallback(
+    (residentId: string, vitalSigns: ResidentDetail['vitalSigns']) => {
+      dispatch(updateVitalSigns({ residentId, vitalSigns }));
+    },
+    [dispatch]
+  );
 
   return {
     residents,

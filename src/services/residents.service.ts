@@ -56,9 +56,13 @@ export class ResidentsService {
     size?: number;
   }): Promise<ApiResponse<PagedResponse<ResidentListItem>>> {
     try {
+      console.log('🔍 ResidentsService.getResidentList 호출됨:', params);
+
       const { page = 1, size = 20, caregiverId } = params || {};
       const from = (page - 1) * size;
       const to = from + size - 1;
+
+      console.log('📄 쿼리 파라미터:', { page, size, from, to, caregiverId });
 
       let query = supabase
         .from('residents')
@@ -73,18 +77,25 @@ export class ResidentsService {
       // 현재는 같은 층/유닛으로 간주
       if (caregiverId) {
         // 추후 구현: 담당자별 필터링 로직
+        console.log('👤 caregiverId 필터링:', caregiverId);
       }
 
+      console.log('🚀 Supabase 쿼리 실행 중...');
       const { data, error, count } = await query;
 
       if (error) {
+        console.error('❌ Supabase 쿼리 오류:', error);
         throw error;
       }
+
+      console.log('✅ Supabase 쿼리 성공!');
+      console.log('📊 조회된 데이터:', data);
+      console.log('🔢 총 개수:', count);
 
       const totalElements = count || 0;
       const totalPages = Math.ceil(totalElements / size);
 
-      return {
+      const result = {
         code: 'SUCCESS',
         message: '입주자 목록 조회 성공',
         timestamp: new Date().toISOString(),
@@ -101,8 +112,11 @@ export class ResidentsService {
           },
         },
       };
+
+      console.log('📋 최종 반환 데이터:', result);
+      return result;
     } catch (error) {
-      console.error('Error fetching residents:', error);
+      console.error('💥 ResidentsService.getResidentList 오류:', error);
       throw {
         code: 'RESIDENT_001',
         message: '입주자 목록 조회 실패',

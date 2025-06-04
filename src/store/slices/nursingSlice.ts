@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { NursingService, type MedicationRecordListItem, type PositionChangeRecordListItem, type AppointmentListItem, type CareScheduleListItem } from '@/services/nursing.service';
 
 export interface MedicationRecord {
   id: string;
@@ -94,6 +95,166 @@ export interface NursingState {
   error: string | null;
 }
 
+// API 비동기 액션들
+export const fetchMedicationRecords = createAsyncThunk(
+  'nursing/fetchMedicationRecords',
+  async (params?: {
+    residentId?: string;
+    caregiverId?: string;
+    date?: string;
+    status?: string;
+    page?: number;
+    size?: number;
+  }) => {
+    const response = await NursingService.getMedicationRecords(params);
+    return response.data;
+  }
+);
+
+export const createMedicationRecord = createAsyncThunk(
+  'nursing/createMedicationRecord',
+  async (recordData: {
+    resident_id: string;
+    caregiver_id: string;
+    medication_name: string;
+    dosage?: string;
+    scheduled_time?: string;
+    actual_time?: string;
+    status: string;
+    notes?: string;
+  }) => {
+    const response = await NursingService.createMedicationRecord({
+      ...recordData,
+      recorded_at: new Date().toISOString(),
+    });
+    return response.data;
+  }
+);
+
+export const fetchPositionChangeRecords = createAsyncThunk(
+  'nursing/fetchPositionChangeRecords',
+  async (params?: {
+    residentId?: string;
+    caregiverId?: string;
+    date?: string;
+    page?: number;
+    size?: number;
+  }) => {
+    const response = await NursingService.getPositionChangeRecords(params);
+    return response.data;
+  }
+);
+
+export const createPositionChangeRecord = createAsyncThunk(
+  'nursing/createPositionChangeRecord',
+  async (recordData: {
+    resident_id: string;
+    caregiver_id: string;
+    change_time: string;
+    from_position?: string;
+    to_position?: string;
+    skin_condition?: string;
+    notes?: string;
+  }) => {
+    const response = await NursingService.createPositionChangeRecord(recordData);
+    return response.data;
+  }
+);
+
+export const fetchAppointments = createAsyncThunk(
+  'nursing/fetchAppointments',
+  async (params?: {
+    residentId?: string;
+    type?: string;
+    date?: string;
+    status?: string;
+    page?: number;
+    size?: number;
+  }) => {
+    const response = await NursingService.getAppointments(params);
+    return response.data;
+  }
+);
+
+export const fetchCareSchedules = createAsyncThunk(
+  'nursing/fetchCareSchedules',
+  async (params?: {
+    residentId?: string;
+    caregiverId?: string;
+    date?: string;
+    type?: string;
+    status?: string;
+    priority?: string;
+    page?: number;
+    size?: number;
+  }) => {
+    const response = await NursingService.getCareSchedules(params);
+    return response.data;
+  }
+);
+
+export const updateCareScheduleStatus = createAsyncThunk(
+  'nursing/updateCareScheduleStatus',
+  async ({ scheduleId, status, notes }: { scheduleId: string; status: string; notes?: string }) => {
+    const response = await NursingService.updateCareScheduleStatus(scheduleId, status, notes);
+    return response.data;
+  }
+);
+
+// API 응답을 Redux 타입으로 변환하는 함수
+function transformApiMedicationRecord(apiRecord: MedicationRecordListItem): MedicationRecord {
+  return {
+    id: apiRecord.id,
+    residentId: apiRecord.resident_id || '',
+    residentName: apiRecord.resident_name || '',
+    medicationName: apiRecord.medication_name,
+    dosage: apiRecord.dosage || '',
+    scheduledTime: apiRecord.scheduled_time || '',
+    actualTime: apiRecord.actual_time || '',
+    status: (apiRecord.status as 'SCHEDULED' | 'COMPLETED' | 'MISSED' | 'REFUSED') || 'SCHEDULED',
+    notes: apiRecord.notes || '',
+    recordedBy: apiRecord.caregiver_name || '',
+    recordedAt: apiRecord.recorded_at || '',
+  };
+}
+
+function transformApiPositionRecord(apiRecord: PositionChangeRecordListItem): PositionChangeRecord {
+  return {
+    id: apiRecord.id,
+    residentId: apiRecord.resident_id || '',
+    residentName: apiRecord.resident_name || '',
+    changeTime: apiRecord.change_time,
+    fromPosition: (apiRecord.from_position as 'SUPINE' | 'LEFT_LATERAL' | 'RIGHT_LATERAL' | 'PRONE' | 'SITTING') || 'SUPINE',
+    toPosition: (apiRecord.to_position as 'SUPINE' | 'LEFT_LATERAL' | 'RIGHT_LATERAL' | 'PRONE' | 'SITTING') || 'SUPINE',
+    skinCondition: (apiRecord.skin_condition as 'NORMAL' | 'REDNESS' | 'PRESSURE_SORE' | 'WOUND') || 'NORMAL',
+    notes: apiRecord.notes || '',
+    recordedBy: apiRecord.caregiver_name || '',
+    recordedAt: apiRecord.created_at || '',
+  };
+}
+
+function transformApiAppointment(apiAppointment: AppointmentListItem): Appointment {
+  return {
+    id: apiAppointment.id,
+    residentId: apiAppointment.resident_id || '',
+    residentName: apiAppointment.resident_name || '',
+    type: (apiAppointment.type as 'HOSPITAL' | 'FAMILY_VISIT' | 'THERAPY' | 'OTHER') || 'OTHER',
+    title: apiAppointment.title || '',
+    scheduledDate: apiAppointment.scheduled_date,
+    scheduledTime: apiAppointment.scheduled_time || '',
+    duration: apiAppointment.duration_minutes,
+    location: apiAppointment.location,
+    hospital: apiAppointment.hospital,
+    department: apiAppointment.department,
+    purpose: apiAppointment.purpose,
+    accompaniedBy: apiAppointment.accompanied_by,
+    transportation: apiAppointment.transportation,
+    visitors: apiAppointment.visitors,
+    status: (apiAppointment.status as 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW') || 'SCHEDULED',
+    notes: apiAppointment.notes,
+  };
+}
+
 const mockMedicationRecords: MedicationRecord[] = [
   {
     id: 'med-001',
@@ -187,11 +348,11 @@ const mockNursingNotes: NursingNote[] = [
 ];
 
 const initialState: NursingState = {
-  medicationRecords: mockMedicationRecords,
-  positionChangeRecords: mockPositionRecords,
-  careActivities: mockCareActivities,
-  appointments: mockAppointments,
-  nursingNotes: mockNursingNotes,
+  medicationRecords: [],
+  positionChangeRecords: [],
+  careActivities: [],
+  appointments: [],
+  nursingNotes: [],
   selectedResident: null,
   selectedDate: new Date().toISOString().split('T')[0],
   filterType: 'all',
@@ -297,6 +458,78 @@ const nursingSlice = createSlice({
       state.error = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      // fetchMedicationRecords
+      .addCase(fetchMedicationRecords.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchMedicationRecords.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.medicationRecords = action.payload.content.map(transformApiMedicationRecord);
+      })
+      .addCase(fetchMedicationRecords.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || '투약 기록 조회에 실패했습니다.';
+      })
+      // createMedicationRecord
+      .addCase(createMedicationRecord.fulfilled, (state, action) => {
+        const newRecord = transformApiMedicationRecord({
+          id: action.payload.id,
+          resident_id: action.payload.resident_id,
+          caregiver_id: action.payload.caregiver_id,
+          medication_name: action.payload.medication_name,
+          dosage: action.payload.dosage,
+          scheduled_time: action.payload.scheduled_time,
+          actual_time: action.payload.actual_time,
+          status: action.payload.status,
+          notes: action.payload.notes,
+          recorded_at: action.payload.recorded_at,
+          created_at: action.payload.created_at,
+        });
+        state.medicationRecords.unshift(newRecord);
+      })
+      // fetchPositionChangeRecords
+      .addCase(fetchPositionChangeRecords.fulfilled, (state, action) => {
+        state.positionChangeRecords = action.payload.content.map(transformApiPositionRecord);
+      })
+      // createPositionChangeRecord
+      .addCase(createPositionChangeRecord.fulfilled, (state, action) => {
+        const newRecord = transformApiPositionRecord({
+          id: action.payload.id,
+          resident_id: action.payload.resident_id,
+          caregiver_id: action.payload.caregiver_id,
+          change_time: action.payload.change_time,
+          from_position: action.payload.from_position,
+          to_position: action.payload.to_position,
+          skin_condition: action.payload.skin_condition,
+          notes: action.payload.notes,
+          created_at: action.payload.created_at,
+        });
+        state.positionChangeRecords.unshift(newRecord);
+      })
+      // fetchAppointments
+      .addCase(fetchAppointments.fulfilled, (state, action) => {
+        state.appointments = action.payload.content.map(transformApiAppointment);
+      })
+      // fetchCareSchedules
+      .addCase(fetchCareSchedules.fulfilled, (state, action) => {
+        // CareActivity로 매핑 (또는 새로운 필드 추가)
+        state.careActivities = action.payload.content.map(schedule => ({
+          id: schedule.id,
+          type: (schedule.type as any) || 'OTHER',
+          residentId: schedule.resident_id || '',
+          residentName: schedule.resident_name || '',
+          actualTime: schedule.scheduled_time,
+          duration: schedule.duration_minutes,
+          status: (schedule.status as any) || 'COMPLETED',
+          notes: schedule.notes,
+          recordedBy: schedule.caregiver_name || '',
+          recordedAt: schedule.created_at || '',
+        }));
+      });
+  },
 });
 
 export const {
@@ -315,5 +548,7 @@ export const {
   setLoading,
   setError,
 } = nursingSlice.actions;
+
+// 비동기 액션들은 이미 위에서 export되었으므로 별도 export 불필요
 
 export default nursingSlice.reducer;
