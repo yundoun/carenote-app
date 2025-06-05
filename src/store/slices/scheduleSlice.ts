@@ -297,6 +297,9 @@ const scheduleSlice = createSlice({
     syncTodoFromSchedule: (state, action: PayloadAction<any[]>) => {
       const schedules = action.payload;
       
+      // 기존 할 일 목록의 로컬 변경사항 보존을 위한 맵 생성
+      const existingTodos = new Map(state.todoList.map(todo => [todo.id, todo]));
+      
       // API 스케줄 데이터를 TodoItem 형태로 변환
       const newTodoList: TodoItem[] = schedules.map((schedule) => {
         // 우선순위 결정 로직
@@ -334,11 +337,16 @@ const scheduleSlice = createSlice({
           }
         };
 
+        // 기존 할 일이 있으면 로컬 상태 우선 사용 (서버 동기화 실패 방지)
+        const existingTodo = existingTodos.get(schedule.id);
+        const serverCompleted = schedule.status === 'COMPLETED';
+        
         return {
           id: schedule.id,
           title: schedule.title,
           description: schedule.description,
-          completed: schedule.status === 'COMPLETED',
+          // 기존 로컬 상태가 있고 서버 상태와 다르면 로컬 우선
+          completed: existingTodo ? existingTodo.completed : serverCompleted,
           priority,
           dueTime: timeFormat(schedule.scheduled_time),
           category: categoryMap[schedule.type] || 'other',
