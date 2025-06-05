@@ -4,16 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ROUTES } from '@/routes/routes';
-import { useHomeData } from '../hooks/useHomeData';
 import type { ScheduleItem } from '../types/home.types';
 
 interface TodayScheduleProps {
   scheduleItems: ScheduleItem[];
+  todaySchedule?: any[];
+  updateTask?: (taskId: string, completed: boolean) => void;
 }
 
-export function TodaySchedule({ scheduleItems }: TodayScheduleProps) {
+export function TodaySchedule({ scheduleItems, todaySchedule = [], updateTask }: TodayScheduleProps) {
   const navigate = useNavigate();
-  const { todaySchedule, updateTask } = useHomeData();
 
   // API 데이터가 있으면 우선 사용, 없으면 props 사용
   const itemsToShow = todaySchedule.length > 0 ? todaySchedule : scheduleItems;
@@ -45,7 +45,7 @@ export function TodaySchedule({ scheduleItems }: TodayScheduleProps) {
   };
 
   const handleTaskComplete = (taskId: string) => {
-    updateTask(taskId, true);
+    updateTask?.(taskId, true);
   };
 
   return (

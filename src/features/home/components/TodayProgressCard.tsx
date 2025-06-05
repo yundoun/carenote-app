@@ -3,16 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ROUTES } from '@/routes/routes';
-import { useHomeData } from '../hooks/useHomeData';
 import type { TodayProgress } from '../types/home.types';
 
 interface TodayProgressCardProps {
   progress: TodayProgress;
+  todayProgress?: any;
 }
 
-export function TodayProgressCard({ progress }: TodayProgressCardProps) {
+export function TodayProgressCard({ progress, todayProgress }: TodayProgressCardProps) {
   const navigate = useNavigate();
-  const { todayProgress } = useHomeData();
 
   const handleClick = () => {
     navigate(ROUTES.MYPAGE);

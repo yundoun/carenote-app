@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { GraduationCap, Bell, BarChart3, Settings } from 'lucide-react';
 import { ROUTES } from '@/routes/routes';
 import { useAppSelector, useAppDispatch } from '@/store';
@@ -30,6 +30,8 @@ export function useHomeData() {
     error,
     lastUpdated,
   } = useAppSelector((state) => state.home);
+
+  const hasInitialized = useRef(false);
 
   // 홈 데이터 초기 로드
   const loadHomeData = useCallback(async () => {
@@ -96,10 +98,13 @@ export function useHomeData() {
     dispatch(clearHomeError());
   }, [dispatch]);
 
-  // 컴포넌트 마운트 시 데이터 로드
+  // 컴포넌트 마운트 시 데이터 로드 (한 번만)
   useEffect(() => {
+    if (hasInitialized.current) return;
+
+    hasInitialized.current = true;
     loadHomeData();
-  }, [loadHomeData]);
+  }, []); // 빈 의존성 배열로 한 번만 실행
 
   // 홈 데이터를 기존 타입 형태로 변환
   const homeData = useMemo((): HomeData => {

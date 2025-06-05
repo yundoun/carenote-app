@@ -3,16 +3,16 @@ import { AlertTriangle, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/routes/routes';
-import { useHomeData } from '../hooks/useHomeData';
 import type { UrgentAnnouncement } from '../types/home.types';
 
 interface UrgentAnnouncementAlertProps {
   announcements: UrgentAnnouncement[];
+  urgentAlerts?: any[];
+  markAlertRead?: (alertId: string) => void;
 }
 
-export function UrgentAnnouncementAlert({ announcements }: UrgentAnnouncementAlertProps) {
+export function UrgentAnnouncementAlert({ announcements, urgentAlerts = [], markAlertRead }: UrgentAnnouncementAlertProps) {
   const navigate = useNavigate();
-  const { urgentAlerts, markAlertRead } = useHomeData();
 
   // API 데이터가 있으면 우선 사용, 없으면 props 사용
   const alertsToShow = urgentAlerts.length > 0 ? urgentAlerts : announcements;
@@ -26,7 +26,7 @@ export function UrgentAnnouncementAlert({ announcements }: UrgentAnnouncementAle
 
   const handleDismiss = () => {
     if (isApiAlert) {
-      markAlertRead(firstAlert.id);
+      markAlertRead?.(firstAlert.id);
     }
   };
 

@@ -1,14 +1,13 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { useHomeData } from '../hooks/useHomeData';
 
 interface UserProfileCardProps {
   name: string;
   role: string;
   floor: string;
+  welcomeData?: any;
 }
 
-export function UserProfileCard({ name, role, floor }: UserProfileCardProps) {
-  const { welcomeData } = useHomeData();
+export function UserProfileCard({ name, role, floor, welcomeData }: UserProfileCardProps) {
 
   return (
     <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
