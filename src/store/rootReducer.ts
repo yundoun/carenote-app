@@ -7,6 +7,7 @@ import announcementsReducer from './slices/announcementsSlice';
 import educationReducer from './slices/educationSlice';
 import nursingReducer from './slices/nursingSlice';
 import uiReducer from './slices/uiSlice';
+import homeReducer from './slices/homeSlice';
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -17,6 +18,7 @@ export const rootReducer = combineReducers({
   education: educationReducer,
   nursing: nursingReducer,
   ui: uiReducer,
+  home: homeReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

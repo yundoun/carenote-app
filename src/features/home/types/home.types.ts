@@ -28,6 +28,10 @@ export interface ScheduleItem {
   time: string;
   title: string;
   description: string;
+  id?: string;
+  type?: 'task' | 'appointment' | 'meeting' | 'shift';
+  priority?: 'high' | 'medium' | 'low';
+  status?: string;
 }
 
 export interface HomeData {

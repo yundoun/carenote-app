@@ -1,5 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { EducationService, type EducationMaterialListItem, type EducationCategoryWithMaterials } from '@/services/education.service';
+import {
+  EducationService,
+  type EducationMaterialListItem,
+  type EducationCategoryWithMaterials,
+} from '@/services/education.service';
 
 export interface EducationCategory {
   id: string;
@@ -57,7 +61,13 @@ export interface EducationState {
   selectedMaterial: EducationMaterial | null;
   currentCategory: string | null;
   searchQuery: string;
-  filterType: 'all' | 'video' | 'document' | 'quiz' | 'completed' | 'in-progress';
+  filterType:
+    | 'all'
+    | 'video'
+    | 'document'
+    | 'quiz'
+    | 'completed'
+    | 'in-progress';
   sortBy: 'recent' | 'popular' | 'title' | 'duration';
   userProgress: Record<string, EducationProgress>;
   isLoading: boolean;
@@ -87,7 +97,6 @@ export const fetchEducationMaterials = createAsyncThunk(
     searchQuery?: string;
     page?: number;
     size?: number;
-    userId?: string;
   }) => {
     const response = await EducationService.getMaterials(params);
     return response.data;
@@ -97,7 +106,10 @@ export const fetchEducationMaterials = createAsyncThunk(
 export const fetchEducationMaterialDetail = createAsyncThunk(
   'education/fetchMaterialDetail',
   async ({ materialId, userId }: { materialId: string; userId?: string }) => {
-    const response = await EducationService.getMaterialDetail(materialId, userId);
+    const response = await EducationService.getMaterialDetail(
+      materialId,
+      userId
+    );
     return response.data;
   }
 );
@@ -117,7 +129,11 @@ export const updateLearningProgress = createAsyncThunk(
       completed?: boolean;
     };
   }) => {
-    const response = await EducationService.updateLearningProgress(materialId, userId, progressData);
+    const response = await EducationService.updateLearningProgress(
+      materialId,
+      userId,
+      progressData
+    );
     return { materialId, progressData: response.data };
   }
 );
@@ -130,8 +146,29 @@ export const fetchUserLearningStats = createAsyncThunk(
   }
 );
 
+export const fetchRecentMaterials = createAsyncThunk(
+  'education/fetchRecentMaterials',
+  async ({ userId, limit = 10 }: { userId: string; limit?: number }) => {
+    const response = await EducationService.getRecentMaterials(userId, limit);
+    return response.data;
+  }
+);
+
+export const fetchRecommendedMaterials = createAsyncThunk(
+  'education/fetchRecommendedMaterials',
+  async ({ userId, limit = 10 }: { userId: string; limit?: number }) => {
+    const response = await EducationService.getRecommendedMaterials(
+      userId,
+      limit
+    );
+    return response.data;
+  }
+);
+
 // API 응답을 Redux 타입으로 변환하는 함수
-function transformApiCategory(apiCategory: EducationCategoryWithMaterials): EducationCategory {
+function transformApiCategory(
+  apiCategory: EducationCategoryWithMaterials
+): EducationCategory {
   return {
     id: apiCategory.id,
     name: apiCategory.name,
@@ -139,13 +176,17 @@ function transformApiCategory(apiCategory: EducationCategoryWithMaterials): Educ
   };
 }
 
-function transformApiMaterial(apiMaterial: EducationMaterialListItem): EducationMaterial {
+function transformApiMaterial(
+  apiMaterial: EducationMaterialListItem
+): EducationMaterial {
   return {
     id: apiMaterial.id,
     title: apiMaterial.title,
     category: apiMaterial.category_name || '',
     subcategory: undefined, // API에서 제공되지 않음
-    type: (apiMaterial.type as 'VIDEO' | 'DOCUMENT' | 'INTERACTIVE' | 'QUIZ') || 'DOCUMENT',
+    type:
+      (apiMaterial.type as 'VIDEO' | 'DOCUMENT' | 'INTERACTIVE' | 'QUIZ') ||
+      'DOCUMENT',
     content: {
       url: apiMaterial.content_url || '',
       duration: apiMaterial.duration || undefined,
@@ -159,15 +200,16 @@ function transformApiMaterial(apiMaterial: EducationMaterialListItem): Education
     difficulty: 'BEGINNER' as const, // API에서 제공되지 않음
     createdAt: apiMaterial.created_at || '',
     updatedAt: apiMaterial.updated_at || '',
-    userProgress: apiMaterial.user_progress ? {
-      completed: apiMaterial.user_progress.completed,
-      lastPosition: apiMaterial.user_progress.last_position,
-      completionRate: apiMaterial.user_progress.completion_rate,
-      lastViewedAt: apiMaterial.user_progress.completed_at || undefined,
-    } : undefined,
+    userProgress: apiMaterial.user_progress
+      ? {
+          completed: apiMaterial.user_progress.completed,
+          lastPosition: apiMaterial.user_progress.last_position,
+          completionRate: apiMaterial.user_progress.completion_rate,
+          lastViewedAt: apiMaterial.user_progress.completed_at || undefined,
+        }
+      : undefined,
   };
 }
-
 
 const initialState: EducationState = {
   categories: [],
@@ -201,23 +243,35 @@ const educationSlice = createSlice({
       state.searchQuery = action.payload;
       state.filteredMaterials = filterMaterials(state);
     },
-    setFilterType: (state, action: PayloadAction<EducationState['filterType']>) => {
+    setFilterType: (
+      state,
+      action: PayloadAction<EducationState['filterType']>
+    ) => {
       state.filterType = action.payload;
       state.filteredMaterials = filterMaterials(state);
     },
     setSortBy: (state, action: PayloadAction<EducationState['sortBy']>) => {
       state.sortBy = action.payload;
-      state.filteredMaterials = sortMaterials(state.filteredMaterials, action.payload);
+      state.filteredMaterials = sortMaterials(
+        state.filteredMaterials,
+        action.payload
+      );
     },
-    setSelectedMaterial: (state, action: PayloadAction<EducationMaterial | null>) => {
+    setSelectedMaterial: (
+      state,
+      action: PayloadAction<EducationMaterial | null>
+    ) => {
       state.selectedMaterial = action.payload;
     },
-    updateMaterialProgress: (state, action: PayloadAction<{
-      materialId: string;
-      progress: Partial<EducationProgress>;
-    }>) => {
+    updateMaterialProgress: (
+      state,
+      action: PayloadAction<{
+        materialId: string;
+        progress: Partial<EducationProgress>;
+      }>
+    ) => {
       const { materialId, progress } = action.payload;
-      const material = state.materials.find(m => m.id === materialId);
+      const material = state.materials.find((m) => m.id === materialId);
       if (material) {
         material.userProgress = {
           ...material.userProgress,
@@ -226,12 +280,15 @@ const educationSlice = createSlice({
         } as EducationMaterial['userProgress'];
       }
     },
-    completeMaterial: (state, action: PayloadAction<{
-      materialId: string;
-      score?: number;
-    }>) => {
+    completeMaterial: (
+      state,
+      action: PayloadAction<{
+        materialId: string;
+        score?: number;
+      }>
+    ) => {
       const { materialId, score } = action.payload;
-      const material = state.materials.find(m => m.id === materialId);
+      const material = state.materials.find((m) => m.id === materialId);
       if (material && material.userProgress) {
         material.userProgress.completed = true;
         material.userProgress.completionRate = 100;
@@ -242,7 +299,7 @@ const educationSlice = createSlice({
       }
     },
     incrementViewCount: (state, action: PayloadAction<string>) => {
-      const material = state.materials.find(m => m.id === action.payload);
+      const material = state.materials.find((m) => m.id === action.payload);
       if (material) {
         material.viewCount += 1;
       }
@@ -267,7 +324,8 @@ const educationSlice = createSlice({
       })
       .addCase(fetchEducationCategories.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error.message || '교육 카테고리 조회에 실패했습니다.';
+        state.error =
+          action.error.message || '교육 카테고리 조회에 실패했습니다.';
       })
       // fetchEducationMaterials
       .addCase(fetchEducationMaterials.pending, (state) => {
@@ -276,10 +334,16 @@ const educationSlice = createSlice({
       })
       .addCase(fetchEducationMaterials.fulfilled, (state, action) => {
         state.isLoading = false;
-        const transformedMaterials = action.payload.content.map(transformApiMaterial);
+        const transformedMaterials =
+          action.payload.content.map(transformApiMaterial);
         state.materials = transformedMaterials;
         state.filteredMaterials = filterMaterials(state);
-        state.pagination = action.payload.page;
+        state.pagination = {
+          page: action.payload.page.number,
+          size: action.payload.page.size,
+          totalElements: action.payload.page.totalElements,
+          totalPages: action.payload.page.totalPages,
+        };
       })
       .addCase(fetchEducationMaterials.rejected, (state, action) => {
         state.isLoading = false;
@@ -296,19 +360,66 @@ const educationSlice = createSlice({
       })
       .addCase(fetchEducationMaterialDetail.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error.message || '교육 자료 상세 조회에 실패했습니다.';
+        state.error =
+          action.error.message || '교육 자료 상세 조회에 실패했습니다.';
       })
       // updateLearningProgress
       .addCase(updateLearningProgress.fulfilled, (state, action) => {
         const { materialId } = action.payload;
-        const material = state.materials.find(m => m.id === materialId);
+        const material = state.materials.find((m) => m.id === materialId);
         if (material && material.userProgress) {
           // API 응답에 따라 업데이트
           material.userProgress.lastViewedAt = new Date().toISOString();
         }
-        if (state.selectedMaterial?.id === materialId && state.selectedMaterial.userProgress) {
-          state.selectedMaterial.userProgress.lastViewedAt = new Date().toISOString();
+        if (
+          state.selectedMaterial?.id === materialId &&
+          state.selectedMaterial.userProgress
+        ) {
+          state.selectedMaterial.userProgress.lastViewedAt =
+            new Date().toISOString();
         }
+      })
+      // fetchRecentMaterials
+      .addCase(fetchRecentMaterials.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchRecentMaterials.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // 최근 자료는 별도 상태로 관리할 수 있지만,
+        // 현재는 기존 materials에 포함시킴
+        const transformedMaterials = action.payload.map(transformApiMaterial);
+        // 기존 materials에서 중복 제거하고 추가
+        const existingIds = new Set(state.materials.map((m) => m.id));
+        const newMaterials = transformedMaterials.filter(
+          (m) => !existingIds.has(m.id)
+        );
+        state.materials = [...newMaterials, ...state.materials];
+        state.filteredMaterials = filterMaterials(state);
+      })
+      .addCase(fetchRecentMaterials.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || '최근 자료 조회에 실패했습니다.';
+      })
+      // fetchRecommendedMaterials
+      .addCase(fetchRecommendedMaterials.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchRecommendedMaterials.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const transformedMaterials = action.payload.map(transformApiMaterial);
+        // 기존 materials에서 중복 제거하고 추가
+        const existingIds = new Set(state.materials.map((m) => m.id));
+        const newMaterials = transformedMaterials.filter(
+          (m) => !existingIds.has(m.id)
+        );
+        state.materials = [...newMaterials, ...state.materials];
+        state.filteredMaterials = filterMaterials(state);
+      })
+      .addCase(fetchRecommendedMaterials.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || '추천 자료 조회에 실패했습니다.';
       });
   },
 });
@@ -319,53 +430,67 @@ function filterMaterials(state: EducationState): EducationMaterial[] {
 
   // 카테고리 필터링
   if (state.currentCategory) {
-    filtered = filtered.filter(m => m.category === state.currentCategory);
+    filtered = filtered.filter((m) => m.category === state.currentCategory);
   }
 
   // 타입별 필터링
   switch (state.filterType) {
     case 'video':
-      filtered = filtered.filter(m => m.type === 'VIDEO');
+      filtered = filtered.filter((m) => m.type === 'VIDEO');
       break;
     case 'document':
-      filtered = filtered.filter(m => m.type === 'DOCUMENT');
+      filtered = filtered.filter((m) => m.type === 'DOCUMENT');
       break;
     case 'quiz':
-      filtered = filtered.filter(m => m.type === 'QUIZ');
+      filtered = filtered.filter((m) => m.type === 'QUIZ');
       break;
     case 'completed':
-      filtered = filtered.filter(m => m.userProgress?.completed);
+      filtered = filtered.filter((m) => m.userProgress?.completed);
       break;
     case 'in-progress':
-      filtered = filtered.filter(m => m.userProgress && !m.userProgress.completed && m.userProgress.completionRate > 0);
+      filtered = filtered.filter(
+        (m) =>
+          m.userProgress &&
+          !m.userProgress.completed &&
+          m.userProgress.completionRate > 0
+      );
       break;
   }
 
   // 검색어 필터링
   if (state.searchQuery) {
     const query = state.searchQuery.toLowerCase();
-    filtered = filtered.filter(m =>
-      m.title.toLowerCase().includes(query) ||
-      m.description.toLowerCase().includes(query) ||
-      m.tags.some(tag => tag.toLowerCase().includes(query))
+    filtered = filtered.filter(
+      (m) =>
+        m.title.toLowerCase().includes(query) ||
+        m.description.toLowerCase().includes(query) ||
+        m.tags.some((tag) => tag.toLowerCase().includes(query))
     );
   }
 
   return sortMaterials(filtered, state.sortBy);
 }
 
-function sortMaterials(materials: EducationMaterial[], sortBy: EducationState['sortBy']): EducationMaterial[] {
+function sortMaterials(
+  materials: EducationMaterial[],
+  sortBy: EducationState['sortBy']
+): EducationMaterial[] {
   const sorted = [...materials];
 
   switch (sortBy) {
     case 'recent':
-      return sorted.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      return sorted.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
     case 'popular':
       return sorted.sort((a, b) => b.viewCount - a.viewCount);
     case 'title':
       return sorted.sort((a, b) => a.title.localeCompare(b.title));
     case 'duration':
-      return sorted.sort((a, b) => (a.content.duration || 0) - (b.content.duration || 0));
+      return sorted.sort(
+        (a, b) => (a.content.duration || 0) - (b.content.duration || 0)
+      );
     default:
       return sorted;
   }

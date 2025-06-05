@@ -39,10 +39,11 @@ export interface EducationCategoryWithMaterials {
 
 export class EducationService {
   // 교육 카테고리 목록 조회
-  static async getCategories(): Promise<ApiResponse<EducationCategoryWithMaterials[]>> {
+  static async getCategories(): Promise<
+    ApiResponse<EducationCategoryWithMaterials[]>
+  > {
     try {
-      const { data, error } = await supabase
-        .from('education_categories')
+      const { data, error } = await supabase.from('education_categories')
         .select(`
           id,
           name,
@@ -55,13 +56,17 @@ export class EducationService {
         throw error;
       }
 
-      const categories: EducationCategoryWithMaterials[] = (data || []).map(category => ({
-        id: category.id,
-        name: category.name,
-        subcategories: category.subcategories,
-        created_at: category.created_at,
-        material_count: Array.isArray(category.education_materials) ? category.education_materials.length : 0,
-      }));
+      const categories: EducationCategoryWithMaterials[] = (data || []).map(
+        (category) => ({
+          id: category.id,
+          name: category.name,
+          subcategories: category.subcategories,
+          created_at: category.created_at,
+          material_count: Array.isArray(category.education_materials)
+            ? category.education_materials.length
+            : 0,
+        })
+      );
 
       return {
         code: 'SUCCESS',
@@ -86,16 +91,22 @@ export class EducationService {
     searchQuery?: string;
     page?: number;
     size?: number;
-    userId?: string;
   }): Promise<ApiResponse<PagedResponse<EducationMaterialListItem>>> {
     try {
-      const { page = 1, size = 20, categoryId, type, searchQuery, userId } = params || {};
+      const {
+        page = 1,
+        size = 20,
+        categoryId,
+        type,
+        searchQuery,
+      } = params || {};
       const from = (page - 1) * size;
       const to = from + size - 1;
 
       let query = supabase
         .from('education_materials')
-        .select(`
+        .select(
+          `
           id,
           title,
           category_id,
@@ -109,14 +120,10 @@ export class EducationService {
           view_count,
           created_at,
           updated_at,
-          education_categories(name),
-          ${userId ? `user_learning_progress!inner(
-            last_position,
-            completion_rate,
-            completed,
-            completed_at
-          )` : ''}
-        `, { count: 'exact' })
+          education_categories(name)
+        `,
+          { count: 'exact' }
+        )
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -132,13 +139,11 @@ export class EducationService {
 
       // 검색어 필터
       if (searchQuery) {
-        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+        query = query.or(
+          `title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
+        );
       }
 
-      // 사용자별 진행률 필터
-      if (userId) {
-        query = query.eq('user_learning_progress.user_id', userId);
-      }
 
       const { data, error, count } = await query;
 
@@ -149,28 +154,25 @@ export class EducationService {
       const totalElements = count || 0;
       const totalPages = Math.ceil(totalElements / size);
 
-      const materials: EducationMaterialListItem[] = (data || []).map(item => ({
-        id: item.id,
-        title: item.title,
-        category_id: item.category_id,
-        category_name: item.education_categories?.name,
-        type: item.type,
-        content_url: item.content_url,
-        thumbnail: item.thumbnail,
-        duration: item.duration,
-        description: item.description,
-        learning_objectives: item.learning_objectives,
-        tags: item.tags,
-        view_count: item.view_count,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        user_progress: item.user_learning_progress?.[0] ? {
-          last_position: item.user_learning_progress[0].last_position || 0,
-          completion_rate: item.user_learning_progress[0].completion_rate || 0,
-          completed: item.user_learning_progress[0].completed || false,
-          completed_at: item.user_learning_progress[0].completed_at,
-        } : undefined,
-      }));
+      const materials: EducationMaterialListItem[] = (data || []).map(
+        (item) => ({
+          id: item.id,
+          title: item.title,
+          category_id: item.category_id,
+          category_name: item.education_categories?.name,
+          type: item.type,
+          content_url: item.content_url,
+          thumbnail: item.thumbnail,
+          duration: item.duration,
+          description: item.description,
+          learning_objectives: item.learning_objectives,
+          tags: item.tags,
+          view_count: item.view_count,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          user_progress: undefined,
+        })
+      );
 
       return {
         code: 'SUCCESS',
@@ -204,16 +206,22 @@ export class EducationService {
     try {
       const { data, error } = await supabase
         .from('education_materials')
-        .select(`
+        .select(
+          `
           *,
           education_categories(name),
-          ${userId ? `user_learning_progress!left(
+          ${
+            userId
+              ? `user_learning_progress!left(
             last_position,
             completion_rate,
             completed,
             completed_at
-          )` : ''}
-        `)
+          )`
+              : ''
+          }
+        `
+        )
         .eq('id', materialId)
         .single();
 
@@ -242,12 +250,15 @@ export class EducationService {
         view_count: (data.view_count || 0) + 1,
         created_at: data.created_at,
         updated_at: data.updated_at,
-        user_progress: data.user_learning_progress?.[0] ? {
-          last_position: data.user_learning_progress[0].last_position || 0,
-          completion_rate: data.user_learning_progress[0].completion_rate || 0,
-          completed: data.user_learning_progress[0].completed || false,
-          completed_at: data.user_learning_progress[0].completed_at,
-        } : undefined,
+        user_progress: data.user_learning_progress?.[0]
+          ? {
+              last_position: data.user_learning_progress[0].last_position || 0,
+              completion_rate:
+                data.user_learning_progress[0].completion_rate || 0,
+              completed: data.user_learning_progress[0].completed || false,
+              completed_at: data.user_learning_progress[0].completed_at,
+            }
+          : undefined,
       };
 
       return {
@@ -301,7 +312,7 @@ export class EducationService {
       const { data, error } = await supabase
         .from('user_learning_progress')
         .upsert(updateData, {
-          onConflict: 'user_id,material_id'
+          onConflict: 'user_id,material_id',
         })
         .select()
         .single();
@@ -327,21 +338,25 @@ export class EducationService {
   }
 
   // 사용자 학습 통계 조회
-  static async getUserLearningStats(userId: string): Promise<ApiResponse<{
-    totalMaterials: number;
-    completedMaterials: number;
-    inProgressMaterials: number;
-    totalLearningTime: number;
-    completionRate: number;
-  }>> {
+  static async getUserLearningStats(userId: string): Promise<
+    ApiResponse<{
+      totalMaterials: number;
+      completedMaterials: number;
+      inProgressMaterials: number;
+      totalLearningTime: number;
+      completionRate: number;
+    }>
+  > {
     try {
       const { data: progressData, error } = await supabase
         .from('user_learning_progress')
-        .select(`
+        .select(
+          `
           completed,
           completion_rate,
           education_materials(duration)
-        `)
+        `
+        )
         .eq('user_id', userId);
 
       if (error) {
@@ -350,15 +365,23 @@ export class EducationService {
 
       const stats = {
         totalMaterials: progressData?.length || 0,
-        completedMaterials: progressData?.filter(p => p.completed).length || 0,
-        inProgressMaterials: progressData?.filter(p => !p.completed && (p.completion_rate || 0) > 0).length || 0,
-        totalLearningTime: progressData?.reduce((total, p) => {
-          const duration = p.education_materials?.duration || 0;
-          const rate = (p.completion_rate || 0) / 100;
-          return total + (duration * rate);
-        }, 0) || 0,
-        completionRate: progressData?.length ? 
-          (progressData.filter(p => p.completed).length / progressData.length) * 100 : 0,
+        completedMaterials:
+          progressData?.filter((p) => p.completed).length || 0,
+        inProgressMaterials:
+          progressData?.filter(
+            (p) => !p.completed && (p.completion_rate || 0) > 0
+          ).length || 0,
+        totalLearningTime:
+          progressData?.reduce((total, p) => {
+            const duration = p.education_materials?.duration || 0;
+            const rate = (p.completion_rate || 0) / 100;
+            return total + duration * rate;
+          }, 0) || 0,
+        completionRate: progressData?.length
+          ? (progressData.filter((p) => p.completed).length /
+              progressData.length) *
+            100
+          : 0,
       };
 
       return {
@@ -372,6 +395,214 @@ export class EducationService {
       throw {
         code: 'EDUCATION_005',
         message: '학습 통계 조회 실패',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 최근 학습한 교육 자료 조회
+  static async getRecentMaterials(
+    userId: string,
+    limit = 10
+  ): Promise<ApiResponse<EducationMaterialListItem[]>> {
+    try {
+      // 사용자의 진행률 데이터를 먼저 조회
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_learning_progress')
+        .select(
+          'material_id, last_position, completion_rate, completed, completed_at, updated_at'
+        )
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(limit);
+
+      if (progressError) {
+        throw progressError;
+      }
+
+      if (!progressData || progressData.length === 0) {
+        return {
+          code: 'SUCCESS',
+          message: '최근 학습 자료 조회 성공',
+          timestamp: new Date().toISOString(),
+          data: [],
+        };
+      }
+
+      // 교육 자료 세부 정보를 조회
+      const materialIds = progressData.map((p) => p.material_id);
+      const { data: materialData, error: materialError } = await supabase
+        .from('education_materials')
+        .select(
+          `
+          id,
+          title,
+          category_id,
+          type,
+          content_url,
+          thumbnail,
+          duration,
+          description,
+          learning_objectives,
+          tags,
+          view_count,
+          created_at,
+          updated_at,
+          education_categories(name)
+        `
+        )
+        .in('id', materialIds);
+
+      if (materialError) {
+        throw materialError;
+      }
+
+      // 진행률 데이터와 교육 자료를 매핑
+      const progressMap = new Map(progressData.map((p) => [p.material_id, p]));
+
+      const materials: EducationMaterialListItem[] = (materialData || [])
+        .map((material) => {
+          const progress = progressMap.get(material.id);
+          return {
+            id: material.id,
+            title: material.title,
+            category_id: material.category_id,
+            category_name: material.education_categories?.name,
+            type: material.type,
+            content_url: material.content_url,
+            thumbnail: material.thumbnail,
+            duration: material.duration,
+            description: material.description,
+            learning_objectives: material.learning_objectives,
+            tags: material.tags,
+            view_count: material.view_count,
+            created_at: material.created_at,
+            updated_at: material.updated_at,
+            user_progress: progress
+              ? {
+                  last_position: progress.last_position || 0,
+                  completion_rate: progress.completion_rate || 0,
+                  completed: progress.completed || false,
+                  completed_at: progress.completed_at,
+                }
+              : undefined,
+          };
+        })
+        .sort((a, b) => {
+          // 진행률 업데이트 시간 기준으로 정렬
+          const aProgress = progressMap.get(a.id);
+          const bProgress = progressMap.get(b.id);
+          const aTime = aProgress?.updated_at || '';
+          const bTime = bProgress?.updated_at || '';
+          return bTime.localeCompare(aTime);
+        });
+
+      return {
+        code: 'SUCCESS',
+        message: '최근 학습 자료 조회 성공',
+        timestamp: new Date().toISOString(),
+        data: materials,
+      };
+    } catch (error) {
+      console.error('Error fetching recent materials:', error);
+      throw {
+        code: 'EDUCATION_006',
+        message: '최근 학습 자료 조회 실패',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 추천 교육 자료 조회 (사용자의 역할, 완료하지 않은 자료 등을 기반으로)
+  static async getRecommendedMaterials(
+    userId: string,
+    limit = 10
+  ): Promise<ApiResponse<EducationMaterialListItem[]>> {
+    try {
+      // 인기 있는 교육 자료를 조회하고 사용자의 진행률을 별도로 가져옴
+      const { data, error } = await supabase
+        .from('education_materials')
+        .select(
+          `
+          id,
+          title,
+          category_id,
+          type,
+          content_url,
+          thumbnail,
+          duration,
+          description,
+          learning_objectives,
+          tags,
+          view_count,
+          created_at,
+          updated_at,
+          education_categories(name)
+        `
+        )
+        .order('view_count', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        throw error;
+      }
+
+      // 각 자료에 대한 사용자 진행률을 별도로 조회
+      const materialIds = data?.map((item) => item.id) || [];
+      const { data: progressData } = await supabase
+        .from('user_learning_progress')
+        .select(
+          'material_id, last_position, completion_rate, completed, completed_at'
+        )
+        .eq('user_id', userId)
+        .in('material_id', materialIds);
+
+      // 진행률 데이터를 매핑
+      const progressMap = new Map(
+        progressData?.map((p) => [p.material_id, p]) || []
+      );
+
+      const materials: EducationMaterialListItem[] = (data || []).map(
+        (item) => {
+          const progress = progressMap.get(item.id);
+          return {
+            id: item.id,
+            title: item.title,
+            category_id: item.category_id,
+            category_name: item.education_categories?.name,
+            type: item.type,
+            content_url: item.content_url,
+            thumbnail: item.thumbnail,
+            duration: item.duration,
+            description: item.description,
+            learning_objectives: item.learning_objectives,
+            tags: item.tags,
+            view_count: item.view_count,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            user_progress: progress
+              ? {
+                  last_position: progress.last_position || 0,
+                  completion_rate: progress.completion_rate || 0,
+                  completed: progress.completed || false,
+                  completed_at: progress.completed_at,
+                }
+              : undefined,
+          };
+        }
+      );
+
+      return {
+        code: 'SUCCESS',
+        message: '추천 교육 자료 조회 성공',
+        timestamp: new Date().toISOString(),
+        data: materials,
+      };
+    } catch (error) {
+      console.error('Error fetching recommended materials:', error);
+      throw {
+        code: 'EDUCATION_007',
+        message: '추천 교육 자료 조회 실패',
         timestamp: new Date().toISOString(),
       };
     }
