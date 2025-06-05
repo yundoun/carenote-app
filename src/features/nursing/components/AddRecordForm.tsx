@@ -80,6 +80,9 @@ export function AddRecordForm({
   const [skinCondition, setSkinCondition] = useState<
     'NORMAL' | 'REDNESS' | 'WOUND' | 'PRESSURE_SORE'
   >('NORMAL');
+  const [medicationStatus, setMedicationStatus] = useState<
+    'SCHEDULED' | 'COMPLETED' | 'MISSED' | 'REFUSED' | 'PARTIAL'
+  >('SCHEDULED');
 
   const handleValueChange = (value: string) => {
     setRecordType(value as RecordType | '');
@@ -91,6 +94,7 @@ export function AddRecordForm({
     setScheduledTime('');
     setFromPosition('');
     setToPosition('');
+    setMedicationStatus('SCHEDULED');
   };
 
   const handleSubmit = async () => {
@@ -127,7 +131,7 @@ export function AddRecordForm({
             dosage: dosage || '',
             scheduledTime:
               scheduledTime || new Date().toTimeString().slice(0, 5),
-            status: 'SCHEDULED',
+            status: medicationStatus,
             notes: content,
           });
           toast.success('투약 기록이 저장되었습니다.');
@@ -271,6 +275,24 @@ export function AddRecordForm({
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="medicationStatus">투약 상태</Label>
+                <Select
+                  value={medicationStatus}
+                  onValueChange={(value) => setMedicationStatus(value as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SCHEDULED">예정</SelectItem>
+                    <SelectItem value="COMPLETED">완료</SelectItem>
+                    <SelectItem value="MISSED">누락</SelectItem>
+                    <SelectItem value="REFUSED">거부</SelectItem>
+                    <SelectItem value="PARTIAL">부분</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </>
           )}

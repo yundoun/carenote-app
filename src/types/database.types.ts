@@ -475,6 +475,63 @@ export type Database = {
           }
         ];
       };
+      nursing_notes: {
+        Row: {
+          attachments: Json | null;
+          caregiver_id: string | null;
+          content: string;
+          created_at: string | null;
+          id: string;
+          note_type: string | null;
+          priority: string | null;
+          resident_id: string | null;
+          tags: string[] | null;
+          title: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          attachments?: Json | null;
+          caregiver_id?: string | null;
+          content: string;
+          created_at?: string | null;
+          id?: string;
+          note_type?: string | null;
+          priority?: string | null;
+          resident_id?: string | null;
+          tags?: string[] | null;
+          title: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          attachments?: Json | null;
+          caregiver_id?: string | null;
+          content?: string;
+          created_at?: string | null;
+          id?: string;
+          note_type?: string | null;
+          priority?: string | null;
+          resident_id?: string | null;
+          tags?: string[] | null;
+          title?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'nursing_notes_caregiver_id_fkey';
+            columns: ['caregiver_id'];
+            isOneToOne: false;
+            referencedRelation: 'staff_profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'nursing_notes_resident_id_fkey';
+            columns: ['resident_id'];
+            isOneToOne: false;
+            referencedRelation: 'residents';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       position_change_records: {
         Row: {
           caregiver_id: string | null;
@@ -843,3 +900,39 @@ export type TablesUpdate<
     ? U
     : never
   : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof Database },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database;
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never = never
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+  ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema['CompositeTypes']
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database;
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+  ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  : never;
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const;

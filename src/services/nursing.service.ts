@@ -121,8 +121,6 @@ export interface NursingNoteRecord {
   title: string;
   content: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' | null;
-  tags: string[] | null;
-  attachments: any | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -137,8 +135,6 @@ export interface NursingNoteListItem {
   title: string;
   content: string;
   priority: string | null;
-  tags: string[] | null;
-  attachments: any | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -278,7 +274,7 @@ export class NursingService {
     recordData: Omit<MedicationRecord, 'id' | 'created_at' | 'recorded_at'> & {
       recorded_at?: string;
     }
-  ): Promise<ApiResponse<MedicationRecord>> {
+  ): Promise<ApiResponse<MedicationRecordWithResident>> {
     try {
       console.log(
         '➕ NursingService.createMedicationRecord 호출됨:',
@@ -293,7 +289,13 @@ export class NursingService {
       const { data, error } = await supabase
         .from('medication_records')
         .insert([insertData])
-        .select()
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
         .single();
 
       if (error) {
@@ -306,7 +308,7 @@ export class NursingService {
         code: 'SUCCESS',
         message: '투약 기록 생성 성공',
         timestamp: new Date().toISOString(),
-        data,
+        data: data as MedicationRecordWithResident,
       };
     } catch (error) {
       console.error('💥 NursingService.createMedicationRecord 오류:', error);
@@ -416,7 +418,7 @@ export class NursingService {
   // 새 체위변경 기록 생성
   static async createPositionChangeRecord(
     recordData: Omit<PositionChangeRecord, 'id' | 'created_at'>
-  ): Promise<ApiResponse<PositionChangeRecord>> {
+  ): Promise<ApiResponse<PositionChangeRecordWithResident>> {
     try {
       console.log(
         '➕ NursingService.createPositionChangeRecord 호출됨:',
@@ -426,7 +428,13 @@ export class NursingService {
       const { data, error } = await supabase
         .from('position_change_records')
         .insert([recordData])
-        .select()
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
         .single();
 
       if (error) {
@@ -439,7 +447,7 @@ export class NursingService {
         code: 'SUCCESS',
         message: '체위변경 기록 생성 성공',
         timestamp: new Date().toISOString(),
-        data,
+        data: data as PositionChangeRecordWithResident,
       };
     } catch (error) {
       console.error(
@@ -871,8 +879,6 @@ export class NursingService {
         title: note.title,
         content: note.content,
         priority: note.priority,
-        tags: note.tags,
-        attachments: note.attachments,
         created_at: note.created_at,
         updated_at: note.updated_at,
       }));
@@ -904,27 +910,33 @@ export class NursingService {
   // 간호 기록 생성
   static async createNursingNote(
     noteData: Omit<NursingNoteRecord, 'id' | 'created_at' | 'updated_at'>
-  ): Promise<ApiResponse<NursingNoteRecord>> {
+  ): Promise<ApiResponse<NursingNoteWithResident>> {
     try {
       console.log('➕ NursingService.createNursingNote 호출됨:', noteData);
 
       const { data, error } = await supabase
         .from('nursing_notes')
         .insert([noteData])
-        .select()
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number, age),
+          caregiver:staff_profiles(id, name, role)
+        `
+        )
         .single();
 
       if (error) {
         throw error;
       }
 
-      console.log('✅ 간호 기록 생성 성공:', data);
+      console.log('✅ 간고 기록 생성 성공:', data);
 
       return {
         code: 'SUCCESS',
         message: '간호 기록 생성 성공',
         timestamp: new Date().toISOString(),
-        data,
+        data: data as NursingNoteWithResident,
       };
     } catch (error) {
       console.error('💥 NursingService.createNursingNote 오류:', error);
@@ -969,7 +981,17 @@ export class NursingService {
         code: 'SUCCESS',
         message: '간호 기록 업데이트 성공',
         timestamp: new Date().toISOString(),
-        data,
+        data: {
+          id: data.id,
+          resident_id: data.resident_id,
+          caregiver_id: data.caregiver_id,
+          note_type: data.note_type as NursingNoteRecord['note_type'],
+          title: data.title,
+          content: data.content,
+          priority: data.priority as NursingNoteRecord['priority'],
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+        },
       };
     } catch (error) {
       console.error('💥 NursingService.updateNursingNote 오류:', error);

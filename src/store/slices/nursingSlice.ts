@@ -16,7 +16,7 @@ export interface MedicationRecord {
   dosage: string;
   scheduledTime: string;
   actualTime?: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'MISSED' | 'REFUSED';
+  status: 'SCHEDULED' | 'COMPLETED' | 'MISSED' | 'REFUSED' | 'PARTIAL';
   notes?: string;
   recordedBy: string;
   recordedAt: string;
@@ -87,12 +87,6 @@ export interface NursingNote {
   title: string;
   content: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  tags: string[];
-  attachments?: Array<{
-    type: 'PHOTO' | 'DOCUMENT';
-    url: string;
-    name: string;
-  }>;
   recordedBy: string;
   recordedAt: string;
 }
@@ -223,14 +217,10 @@ export const createNewNursingNote = createAsyncThunk(
     title: string;
     content: string;
     priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-    tags?: string[];
-    attachments?: any;
   }) => {
     const response = await NursingService.createNursingNote({
       ...noteData,
       priority: noteData.priority || 'MEDIUM',
-      tags: noteData.tags || null,
-      attachments: noteData.attachments || null,
     });
     return response.data;
   }
@@ -297,8 +287,6 @@ const transformApiNursingNote = (
   title: apiNote.title,
   content: apiNote.content,
   priority: apiNote.priority as any,
-  tags: apiNote.tags || [],
-  attachments: apiNote.attachments,
   recordedBy: apiNote.caregiver?.name || '알 수 없음',
   recordedAt: apiNote.created_at || new Date().toISOString(),
 });
@@ -560,7 +548,10 @@ const nursingSlice = createSlice({
 
         state.isLoading = false;
         state.error = null;
-        // TODO: 새로 생성된 기록을 현재 목록에 추가하는 로직
+        // 새로 생성된 기록을 현재 목록에 추가
+        const newRecord = transformApiMedicationRecord(action.payload);
+        state.medicationRecords.unshift(newRecord);
+        state.totalMedications += 1;
       })
       .addCase(createNewMedicationRecord.rejected, (state, action) => {
         console.error('❌ createNewMedicationRecord.rejected - 생성 실패');
@@ -581,7 +572,10 @@ const nursingSlice = createSlice({
 
         state.isLoading = false;
         state.error = null;
-        // TODO: 새로 생성된 기록을 현재 목록에 추가하는 로직
+        // 새로 생성된 기록을 현재 목록에 추가
+        const newRecord = transformApiPositionRecord(action.payload);
+        state.positionChangeRecords.unshift(newRecord);
+        state.totalPositionChanges += 1;
       })
       .addCase(createNewPositionChangeRecord.rejected, (state, action) => {
         console.error('❌ createNewPositionChangeRecord.rejected - 생성 실패');
@@ -622,20 +616,8 @@ const nursingSlice = createSlice({
       })
       .addCase(createNewNursingNote.fulfilled, (state, action) => {
         state.isLoading = false;
-        // API에서 반환된 단순 NursingNoteRecord를 Redux NursingNote로 변환
-        const newNote: NursingNote = {
-          id: action.payload.id,
-          residentId: action.payload.resident_id || '',
-          residentName: '알 수 없음', // API에서 join 정보가 없으므로 기본값
-          noteType: action.payload.note_type as any,
-          title: action.payload.title,
-          content: action.payload.content,
-          priority: action.payload.priority as any,
-          tags: action.payload.tags || [],
-          attachments: action.payload.attachments,
-          recordedBy: '알 수 없음', // API에서 join 정보가 없으므로 기본값
-          recordedAt: action.payload.created_at || new Date().toISOString(),
-        };
+        // API에서 반환된 NursingNoteWithResident를 Redux NursingNote로 변환
+        const newNote: NursingNote = transformApiNursingNote(action.payload);
         state.nursingNotes.unshift(newNote);
         state.totalNursingNotes += 1;
       })
@@ -660,8 +642,6 @@ const nursingSlice = createSlice({
           title: action.payload.title,
           content: action.payload.content,
           priority: action.payload.priority as any,
-          tags: action.payload.tags || [],
-          attachments: action.payload.attachments,
           recordedBy: '알 수 없음', // API에서 join 정보가 없으므로 기본값
           recordedAt: action.payload.created_at || new Date().toISOString(),
         };

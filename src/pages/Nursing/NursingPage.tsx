@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,10 +18,12 @@ import {
 } from '@/features/nursing';
 import { useNursing } from '@/features/nursing/hooks/useNursing';
 import { useResidents } from '@/features/residents/hooks/useResidents';
-// import { useAppSelector } from '@/store'; // currentUser는 useNursing 내부에서 처리하므로 직접 가져올 필요 없음
+import { useAppDispatch } from '@/store';
+import { fetchResidents } from '@/store/slices/residentsSlice';
 
 export default function NursingPage() {
   const [isAddingRecord, setIsAddingRecord] = useState(false);
+  const dispatch = useAppDispatch();
 
   // useNursing 훅에서 반환하는 실제 함수명으로 구조 분해 할당합니다.
   // useNursing.ts에서 addNursingNote, addMedicationRecord, addPositionChangeRecord 이름으로 반환하도록 설정했습니다.
@@ -39,6 +41,14 @@ export default function NursingPage() {
   const { residents, isLoading: isResidentsLoading } = useResidents();
 
   const pageIsLoading = isNursingLoading || isResidentsLoading;
+
+  // 컴포넌트 마운트 시 환자 데이터 가져오기
+  useEffect(() => {
+    console.log('🏥 NursingPage 마운트됨 - fetchResidents 호출 시작');
+    if (residents.length === 0) {
+      dispatch(fetchResidents());
+    }
+  }, [dispatch, residents.length]);
 
   // 이전에 dispatch 오류를 유발했던 handleAdd... 헬퍼 함수들은 제거합니다.
   // useNursing에서 반환된 함수를 직접 AddRecordForm에 전달합니다.

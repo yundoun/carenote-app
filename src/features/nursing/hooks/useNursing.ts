@@ -4,23 +4,16 @@ import {
   setSelectedResident,
   setSelectedDate,
   setFilterType,
-  addCareActivity,
-  updateNursingNote,
-  startRecording,
-  cancelRecording,
   clearError,
   fetchTodayNursingRecords,
   fetchResidentNursingRecords,
   createNewMedicationRecord,
   createNewPositionChangeRecord,
   createNewNursingNote,
-  updateMedicationRecordStatus,
-  updateNursingNoteData,
 } from '@/store/slices/nursingSlice';
 import type {
   MedicationRecord as ReduxMedicationRecord,
   PositionChangeRecord as ReduxPositionChangeRecord,
-  CareActivity,
   NursingNote as ReduxNursingNote,
 } from '@/store/slices/nursingSlice';
 import type {
