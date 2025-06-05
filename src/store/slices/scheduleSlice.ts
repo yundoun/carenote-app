@@ -266,6 +266,53 @@ const scheduleSlice = createSlice({
         (item) => item.id !== action.payload
       );
     },
+    // API에서 가져온 스케줄 데이터를 할 일 목록으로 동기화
+    syncTodoFromSchedule: (state, action: PayloadAction<any[]>) => {
+      const schedules = action.payload;
+      
+      // API 스케줄 데이터를 TodoItem 형태로 변환
+      const newTodoList: TodoItem[] = schedules.map((schedule) => {
+        // 우선순위 결정 로직
+        let priority: 'low' | 'medium' | 'high' = 'medium';
+        if (schedule.priority === 'HIGH' || schedule.type === 'MEDICATION') {
+          priority = 'high';
+        } else if (schedule.priority === 'LOW') {
+          priority = 'low';
+        }
+
+        // 카테고리 매핑
+        const categoryMap: Record<string, TodoItem['category']> = {
+          'MEDICATION': 'medicine',
+          'VITAL_CHECK': 'vital',
+          'MEAL_ASSISTANCE': 'meal',
+          'POSITION_CHANGE': 'care',
+          'EXERCISE': 'care',
+          'HYGIENE': 'care',
+        };
+
+        // 시간 포맷팅 (ISO 8601 → HH:MM)
+        const timeFormat = (isoString: string) => {
+          const date = new Date(isoString);
+          return date.toLocaleTimeString('ko-KR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false
+          });
+        };
+
+        return {
+          id: schedule.id,
+          title: schedule.title,
+          description: schedule.description,
+          completed: schedule.status === 'COMPLETED',
+          priority,
+          dueTime: timeFormat(schedule.scheduled_time),
+          category: categoryMap[schedule.type] || 'other',
+        };
+      });
+
+      state.todoList = newTodoList;
+    },
     addHandoverNote: (
       state,
       action: PayloadAction<Omit<HandoverNote, 'id' | 'timestamp'>>
@@ -406,6 +453,7 @@ export const {
   toggleTodoItem,
   updateTodoItem,
   removeTodoItem,
+  syncTodoFromSchedule,
   addHandoverNote,
   updateWeeklySchedule,
   setLoading,

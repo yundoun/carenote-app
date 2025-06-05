@@ -14,6 +14,7 @@ import {
   markAlertAsRead,
   updateTaskProgress,
 } from '@/store/slices/homeSlice';
+import { syncTodoFromSchedule } from '@/store/slices/scheduleSlice';
 import type { HomeData, QuickAccessItem } from '../types/home.types';
 
 export function useHomeData() {
@@ -45,8 +46,14 @@ export function useHomeData() {
     });
     
     try {
-      await dispatch(fetchHomeDashboardData(testUserId)).unwrap();
+      const result = await dispatch(fetchHomeDashboardData(testUserId)).unwrap();
       console.log('🏠 홈 데이터 로드 성공');
+      
+      // API에서 받은 스케줄 데이터를 할 일 목록으로 동기화
+      if (result.todaySchedule && result.todaySchedule.length > 0) {
+        console.log('📋 할 일 목록 동기화 시작:', result.todaySchedule);
+        dispatch(syncTodoFromSchedule(result.todaySchedule));
+      }
     } catch (error) {
       console.error('🏠 홈 데이터 로드 실패:', error);
     }
