@@ -48,18 +48,7 @@ export function VitalsPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-0">
-          <VitalOverview
-            seniors={seniors}
-            urgentCases={urgentCases}
-            isRecording={isRecording}
-            selectedSenior={selectedSenior}
-            newVitals={newVitals}
-            onOpenRecord={openRecordDialog}
-            onSelectSenior={handleSelectSenior}
-            onVitalsChange={updateVitals}
-            onSaveVitals={saveVitals}
-            onRecordingChange={closeRecordDialog}
-          />
+          <VitalOverview />
         </TabsContent>
 
         <TabsContent value="schedule" className="mt-0">

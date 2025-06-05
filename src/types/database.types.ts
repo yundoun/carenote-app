@@ -810,6 +810,68 @@ export type Database = {
           }
         ];
       };
+      vital_records: {
+        Row: {
+          id: string;
+          resident_id: string | null;
+          measured_at: string;
+          systolic_bp: number | null;
+          diastolic_bp: number | null;
+          heart_rate: number | null;
+          temperature: number | null;
+          respiratory_rate: number | null;
+          blood_oxygen: number | null;
+          blood_sugar: number | null;
+          weight: number | null;
+          notes: string | null;
+          measured_by: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          resident_id?: string | null;
+          measured_at: string;
+          systolic_bp?: number | null;
+          diastolic_bp?: number | null;
+          heart_rate?: number | null;
+          temperature?: number | null;
+          respiratory_rate?: number | null;
+          blood_oxygen?: number | null;
+          blood_sugar?: number | null;
+          weight?: number | null;
+          notes?: string | null;
+          measured_by: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          resident_id?: string | null;
+          measured_at?: string;
+          systolic_bp?: number | null;
+          diastolic_bp?: number | null;
+          heart_rate?: number | null;
+          temperature?: number | null;
+          respiratory_rate?: number | null;
+          blood_oxygen?: number | null;
+          blood_sugar?: number | null;
+          weight?: number | null;
+          notes?: string | null;
+          measured_by?: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'vital_records_resident_id_fkey';
+            columns: ['resident_id'];
+            isOneToOne: false;
+            referencedRelation: 'residents';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

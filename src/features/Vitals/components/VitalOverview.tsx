@@ -1,50 +1,26 @@
 import { UrgentAlert } from './UrgentAlert';
 import { VitalCard } from './VitalCard';
-import type { Senior, VitalSigns } from '../types/vitals.types';
+import { useVitals } from '../hooks/useVitals';
 
-interface VitalOverviewProps {
-  seniors: Senior[];
-  urgentCases: Senior[];
-  isRecording: boolean;
-  selectedSenior: Senior | null;
-  newVitals: Partial<VitalSigns>;
-  onOpenRecord: (senior: Senior) => void;
-  onSelectSenior: (senior: Senior) => void;
-  onVitalsChange: (vitals: Partial<VitalSigns>) => void;
-  onSaveVitals: () => void;
-  onRecordingChange: () => void;
-}
+export const VitalOverview = () => {
+  const { seniors, urgentCases, selectSenior } = useVitals();
 
-export const VitalOverview = ({
-  seniors,
-  urgentCases,
-  isRecording,
-  selectedSenior,
-  newVitals,
-  onOpenRecord,
-  onSelectSenior,
-  onVitalsChange,
-  onSaveVitals,
-  onRecordingChange,
-}: VitalOverviewProps) => {
   return (
     <div className="space-y-4">
-      <UrgentAlert urgentCases={urgentCases} onSelectSenior={onSelectSenior} />
+      <UrgentAlert urgentCases={urgentCases} onSelectSenior={selectSenior} />
 
-      {seniors.map((senior) => (
-        <VitalCard
-          key={senior.id}
-          senior={senior}
-          isRecording={isRecording}
-          selectedSenior={selectedSenior}
-          newVitals={newVitals}
-          onOpenRecord={onOpenRecord}
-          onSelectSenior={onSelectSenior}
-          onVitalsChange={onVitalsChange}
-          onSaveVitals={onSaveVitals}
-          onRecordingChange={onRecordingChange}
-        />
-      ))}
+      {seniors.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">거주자 데이터를 불러오는 중...</p>
+        </div>
+      ) : (
+        seniors.map((senior) => (
+          <VitalCard
+            key={senior.id}
+            senior={senior}
+          />
+        ))
+      )}
     </div>
   );
 };
