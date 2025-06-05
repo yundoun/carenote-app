@@ -5,6 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 import {
   GreetingsSection,
   UrgentAnnouncements,
@@ -52,6 +54,9 @@ export default function AnnouncementsPage() {
     greetings,
     urgentAnnouncements: storeUrgentAnnouncements,
     unreadCount,
+    isLoading,
+    error,
+    refreshAnnouncements,
   } = useAnnouncements();
 
   // Redux store의 데이터를 features/announcements 타입으로 변환
@@ -64,13 +69,55 @@ export default function AnnouncementsPage() {
     setSelectedAnnouncement(announcement);
   };
 
+  const handleRefresh = () => {
+    refreshAnnouncements();
+  };
+
+  if (isLoading && storeAnnouncements.length === 0) {
+    return (
+      <div className="container mx-auto p-4 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
+          <p className="text-gray-600">공지사항을 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 mx-auto mb-4 text-red-500" />
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={handleRefresh} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            다시 시도
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">공지사항</h1>
-        <div className="text-right text-sm text-gray-500">
-          <p>읽지 않은 공지: {unreadCount}개</p>
-          <p>긴급 공지: {urgentAnnouncements.length}개</p>
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            disabled={isLoading}>
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`}
+            />
+            새로고침
+          </Button>
+          <div className="text-right text-sm text-gray-500">
+            <p>읽지 않은 공지: {unreadCount}개</p>
+            <p>긴급 공지: {urgentAnnouncements.length}개</p>
+          </div>
         </div>
       </div>
 
