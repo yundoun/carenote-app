@@ -2,6 +2,7 @@ import { CheckCircle2, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useAppSelector } from '@/store';
 import { ROUTES } from '@/routes/routes';
 import type { TodayProgress } from '../types/home.types';
 
@@ -12,6 +13,12 @@ interface TodayProgressCardProps {
 
 export function TodayProgressCard({ progress, todayProgress }: TodayProgressCardProps) {
   const navigate = useNavigate();
+  const { todoList } = useAppSelector((state) => state.schedule);
+
+  // Redux store에서 실시간 진행률 계산
+  const completedTasks = todoList.filter((todo) => todo.completed).length;
+  const totalTasks = todoList.length;
+  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const handleClick = () => {
     navigate(ROUTES.MYPAGE);
@@ -32,16 +39,15 @@ export function TodayProgressCard({ progress, todayProgress }: TodayProgressCard
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">업무 진행률</span>
             <span className="text-sm font-semibold">
-              {todayProgress?.completedTasks || progress.completed}/
-              {todayProgress?.totalTasks || progress.total} 완료
+              {completedTasks}/{totalTasks} 완료
             </span>
           </div>
           <Progress 
-            value={todayProgress?.progressPercentage || progress.percentage} 
+            value={progressPercentage} 
             className="h-2" 
           />
           <p className="text-xs text-gray-500 text-center">
-            {todayProgress?.progressPercentage || progress.percentage}% 완료
+            {progressPercentage}% 완료
           </p>
           
           {todayProgress?.vitalCheckStatus && (
