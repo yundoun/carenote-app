@@ -10,25 +10,33 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { VitalRecordForm } from './VitalRecordForm';
-import { useVitals } from '../hooks/useVitals';
 import type { Senior, VitalSigns } from '@/store/slices/vitalsSlice';
 
 interface VitalCardProps {
   senior: Senior;
+  isRecording: boolean;
+  selectedSenior: Senior | null;
+  newVitals: Partial<VitalSigns>;
+  startVitalRecording: (seniorId: string) => void;
+  selectSenior: (senior: Senior | null) => void;
+  updateVitalsInput: (vitals: Partial<VitalSigns>) => void;
+  saveVitals: (seniorId: string) => Promise<void>;
+  cancelVitalRecording: () => void;
+  isLoading: boolean;
 }
 
-export const VitalCard = ({ senior }: VitalCardProps) => {
-  const { 
-    isRecording, 
-    selectedSenior, 
-    newVitals, 
-    startVitalRecording, 
-    selectSenior, 
-    updateVitalsInput, 
-    saveVitals, 
-    cancelVitalRecording,
-    isLoading 
-  } = useVitals();
+export const VitalCard = ({ 
+  senior,
+  isRecording,
+  selectedSenior,
+  newVitals,
+  startVitalRecording,
+  selectSenior,
+  updateVitalsInput,
+  saveVitals,
+  cancelVitalRecording,
+  isLoading
+}: VitalCardProps) => {
 
   const isSelected = selectedSenior?.id === senior.id;
   

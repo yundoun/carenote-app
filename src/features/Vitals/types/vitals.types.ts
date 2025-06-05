@@ -29,7 +29,6 @@ export interface Senior {
 
 export type VitalStatus = 'normal' | 'warning' | 'danger';
 
-export type VitalsView = 'overview' | 'schedule' | 'history';
 
 export interface VitalMeasurement {
   seniorId: string;
