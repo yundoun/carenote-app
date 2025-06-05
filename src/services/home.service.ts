@@ -40,6 +40,7 @@ export interface HomeScheduleItem {
   description: string;
   type: 'shift' | 'appointment' | 'task' | 'meeting';
   priority: 'high' | 'medium' | 'low';
+  status: string; // care_schedules 테이블의 status 필드 (PENDING, IN_PROGRESS, COMPLETED, CANCELLED)
 }
 
 export interface HomeUrgentAlert {
@@ -280,6 +281,7 @@ export class HomeService {
         description: schedule.description || schedule.notes || '',
         type: HomeService.mapScheduleType(schedule.type),
         priority: (schedule.priority || 'medium') as 'high' | 'medium' | 'low',
+        status: schedule.status, // care_schedules 테이블의 status 필드 추가
       }));
 
       return {

@@ -31,7 +31,6 @@ export function useHomeData() {
     error,
     lastUpdated,
   } = useAppSelector((state) => state.home);
-  const { todoList } = useAppSelector((state) => state.schedule);
 
   const hasInitialized = useRef(false);
 
@@ -50,24 +49,15 @@ export function useHomeData() {
       const result = await dispatch(fetchHomeDashboardData(testUserId)).unwrap();
       console.log('🏠 홈 데이터 로드 성공');
       
-      // API에서 받은 스케줄 데이터를 할 일 목록으로 동기화
-      // 할 일 목록이 이미 있으면 중복 동기화 방지
+      // API에서 받은 스케줄 데이터를 할 일 목록으로 동기화 (서버 상태가 정답)
       if (result.todaySchedule && result.todaySchedule.length > 0) {
-        const shouldSync = todoList.length === 0 || 
-          todoList.length !== result.todaySchedule.length ||
-          !todoList.some(todo => result.todaySchedule.some((s: any) => s.id === todo.id));
-        
-        if (shouldSync) {
-          console.log('📋 할 일 목록 동기화 시작:', result.todaySchedule);
-          dispatch(syncTodoFromSchedule(result.todaySchedule));
-        } else {
-          console.log('📋 할 일 목록 이미 동기화됨, 스킵');
-        }
+        console.log('📋 할 일 목록 동기화 시작:', result.todaySchedule);
+        dispatch(syncTodoFromSchedule(result.todaySchedule));
       }
     } catch (error) {
       console.error('🏠 홈 데이터 로드 실패:', error);
     }
-  }, [dispatch, user?.id, todoList]);
+  }, [dispatch, user?.id]);
 
   // 개별 데이터 로드 함수들
   const loadWelcomeData = useCallback(() => {

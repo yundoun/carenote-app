@@ -62,22 +62,27 @@ export const createNewSchedule = createAsyncThunk(
   }
 );
 
-// 할 일 완료 상태 업데이트 (서버와 동기화)
+// care_schedules 테이블의 status 업데이트 (할 일 완료/미완료)
 export const updateTodoItemStatus = createAsyncThunk(
   'schedule/updateTodoItemStatus',
-  async (params: { todoId: string; completed: boolean }) => {
-    const { todoId, completed } = params;
-    const status = completed ? 'COMPLETED' : 'PENDING';
+  async (params: { scheduleId: string; completed: boolean }) => {
+    const { scheduleId, completed } = params;
+    
+    // care_schedules 테이블의 status 필드 업데이트
+    const newStatus = completed ? 'COMPLETED' : 'PENDING';
+    
+    console.log(`🔄 할 일 상태 업데이트: ${scheduleId} -> ${newStatus}`);
     
     const response = await ScheduleService.updateScheduleStatus(
-      todoId,
-      status
+      scheduleId,
+      newStatus
     );
     
     return {
-      todoId,
+      scheduleId,
       completed,
-      ...response.data,
+      newStatus,
+      updatedSchedule: response.data,
     };
   }
 );
@@ -262,13 +267,7 @@ const scheduleSlice = createSlice({
       };
       state.todoList.push(newTodo);
     },
-    toggleTodoItem: (state, action: PayloadAction<string>) => {
-      const todo = state.todoList.find((item) => item.id === action.payload);
-      if (todo) {
-        todo.completed = !todo.completed;
-      }
-    },
-    // 낙관적 업데이트: 로컬에서 먼저 상태 변경
+    // 낙관적 업데이트: 즉시 UI 반영 (서버 응답 전)
     toggleTodoItemOptimistic: (state, action: PayloadAction<string>) => {
       const todo = state.todoList.find((item) => item.id === action.payload);
       if (todo) {
@@ -293,12 +292,9 @@ const scheduleSlice = createSlice({
         (item) => item.id !== action.payload
       );
     },
-    // API에서 가져온 스케줄 데이터를 할 일 목록으로 동기화
+    // API에서 가져온 스케줄 데이터를 할 일 목록으로 동기화 (서버 상태가 정답)
     syncTodoFromSchedule: (state, action: PayloadAction<any[]>) => {
       const schedules = action.payload;
-      
-      // 기존 할 일 목록의 로컬 변경사항 보존을 위한 맵 생성
-      const existingTodos = new Map(state.todoList.map(todo => [todo.id, todo]));
       
       // API 스케줄 데이터를 TodoItem 형태로 변환
       const newTodoList: TodoItem[] = schedules.map((schedule) => {
@@ -337,16 +333,12 @@ const scheduleSlice = createSlice({
           }
         };
 
-        // 기존 할 일이 있으면 로컬 상태 우선 사용 (서버 동기화 실패 방지)
-        const existingTodo = existingTodos.get(schedule.id);
-        const serverCompleted = schedule.status === 'COMPLETED';
-        
         return {
           id: schedule.id,
           title: schedule.title,
           description: schedule.description,
-          // 기존 로컬 상태가 있고 서버 상태와 다르면 로컬 우선
-          completed: existingTodo ? existingTodo.completed : serverCompleted,
+          // 서버 상태가 정답 - 항상 서버 데이터 사용
+          completed: schedule.status === 'COMPLETED',
           priority,
           dueTime: timeFormat(schedule.scheduled_time),
           category: categoryMap[schedule.type] || 'other',
@@ -482,36 +474,37 @@ const scheduleSlice = createSlice({
         state.error = action.error.message || '새 스케줄 생성에 실패했습니다.';
       })
 
-      // updateTodoItemStatus
+      // updateTodoItemStatus - care_schedules 테이블 status 업데이트
       .addCase(updateTodoItemStatus.pending, (state, action) => {
-        console.log('🔄 updateTodoItemStatus.pending - 할 일 상태 업데이트 시작');
-        // 낙관적 업데이트는 이미 완료된 상태
+        console.log('🔄 updateTodoItemStatus.pending - care_schedules 상태 업데이트 시작');
+        // 낙관적 업데이트는 이미 toggleTodoItemOptimistic에서 완료
       })
       .addCase(updateTodoItemStatus.fulfilled, (state, action) => {
-        console.log('✅ updateTodoItemStatus.fulfilled - 서버 동기화 성공');
-        console.log('📊 업데이트된 데이터:', action.payload);
+        console.log('✅ updateTodoItemStatus.fulfilled - care_schedules 업데이트 성공');
+        console.log('📊 업데이트된 스케줄 데이터:', action.payload);
         
-        // 서버 응답으로 상태 확정 (이미 낙관적 업데이트 완료)
-        const { todoId, completed } = action.payload;
-        const todo = state.todoList.find((item) => item.id === todoId);
+        // care_schedules 테이블 업데이트 성공 - Redux 상태를 서버 상태와 동기화
+        const { scheduleId, completed, updatedSchedule } = action.payload;
+        const todo = state.todoList.find((item) => item.id === scheduleId);
         if (todo) {
-          todo.completed = completed;
+          // 서버에서 받은 실제 status를 기반으로 completed 상태 설정
+          todo.completed = updatedSchedule.status === 'COMPLETED';
         }
         
         state.error = null;
       })
       .addCase(updateTodoItemStatus.rejected, (state, action) => {
-        console.error('❌ updateTodoItemStatus.rejected - 서버 동기화 실패');
+        console.error('❌ updateTodoItemStatus.rejected - care_schedules 업데이트 실패');
         console.error('오류 정보:', action.error);
         
         // 실패 시 낙관적 업데이트 롤백
-        const todoId = action.meta.arg.todoId;
-        const todo = state.todoList.find((item) => item.id === todoId);
+        const scheduleId = action.meta.arg.scheduleId;
+        const todo = state.todoList.find((item) => item.id === scheduleId);
         if (todo) {
           todo.completed = !todo.completed; // 원래 상태로 되돌림
         }
         
-        state.error = action.error.message || '할 일 상태 업데이트에 실패했습니다.';
+        state.error = action.error.message || 'care_schedules 상태 업데이트에 실패했습니다.';
       });
   },
 });
@@ -524,7 +517,6 @@ export const {
   clearError,
   updateLocalScheduleStatus,
   addTodoItem,
-  toggleTodoItem,
   toggleTodoItemOptimistic,
   updateTodoItem,
   removeTodoItem,

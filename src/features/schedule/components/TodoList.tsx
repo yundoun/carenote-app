@@ -18,19 +18,25 @@ export const TodoList = (props: TodoListProps) => {
   const totalTasks = todoList.length;
   const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const handleTodoToggle = (todoId: string) => {
+  const handleTodoToggle = async (scheduleId: string) => {
     // 현재 완료 상태 확인
-    const todo = todoList.find(item => item.id === todoId);
+    const todo = todoList.find(item => item.id === scheduleId);
     if (!todo) return;
 
     // 낙관적 업데이트: 즉시 UI 변경
-    dispatch(toggleTodoItemOptimistic(todoId));
+    dispatch(toggleTodoItemOptimistic(scheduleId));
 
-    // 서버에 상태 업데이트 요청
-    dispatch(updateTodoItemStatus({
-      todoId,
-      completed: !todo.completed
-    }));
+    try {
+      // care_schedules 테이블의 status 업데이트 요청
+      await dispatch(updateTodoItemStatus({
+        scheduleId,
+        completed: !todo.completed
+      })).unwrap();
+      
+      console.log('✅ care_schedules 상태 업데이트 성공');
+    } catch (error) {
+      console.error('❌ care_schedules 상태 업데이트 실패:', error);
+    }
   };
 
   return (
