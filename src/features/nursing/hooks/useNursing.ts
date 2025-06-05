@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store';
 import {
   setSelectedResident,
@@ -11,6 +11,7 @@ import {
   createNewPositionChangeRecord,
   createNewNursingNote,
 } from '@/store/slices/nursingSlice';
+import { fetchResidents } from '@/store/slices/residentsSlice';
 import type {
   MedicationRecord as ReduxMedicationRecord,
   PositionChangeRecord as ReduxPositionChangeRecord,
@@ -71,6 +72,8 @@ export function useNursing() {
   const currentUser = useAppSelector((state) => state.auth.user);
 
   const nursingState = useAppSelector((state) => state.nursing);
+  const residentsState = useAppSelector((state) => state.residents);
+  
   const {
     medicationRecords: reduxMedicationRecords,
     positionChangeRecords: reduxPositionChangeRecords,
@@ -80,7 +83,7 @@ export function useNursing() {
     filterType,
     isRecording,
     currentRecord,
-    isLoading,
+    isLoading: isNursingLoading,
     error,
     totalMedications,
     completedMedications,
@@ -89,23 +92,50 @@ export function useNursing() {
     totalNursingNotes,
   } = nursingState;
 
+  const {
+    residents,
+    isLoading: isResidentsLoading,
+  } = residentsState;
+
+  const isLoading = isNursingLoading || isResidentsLoading;
+
   const caregiverId = useMemo(() => {
     return currentUser?.id || 'anonymous_caregiver';
   }, [currentUser?.id]);
 
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
-    if (selectedResident) {
-      dispatch(
-        fetchResidentNursingRecords({
-          residentId: selectedResident,
-          startDate: selectedDate,
-          endDate: selectedDate,
-        })
-      );
-    } else {
-      dispatch(fetchTodayNursingRecords({ caregiverId, date: selectedDate }));
-    }
-  }, [dispatch, caregiverId, selectedResident, selectedDate]);
+    if (hasInitialized.current) return;
+
+    const loadData = async () => {
+      try {
+        hasInitialized.current = true;
+
+        // 거주자 데이터가 없으면 먼저 로드
+        if (residents.length === 0) {
+          await dispatch(fetchResidents()).unwrap();
+        }
+
+        // 간호 기록 데이터 로드
+        if (selectedResident) {
+          await dispatch(
+            fetchResidentNursingRecords({
+              residentId: selectedResident,
+              startDate: selectedDate,
+              endDate: selectedDate,
+            })
+          ).unwrap();
+        } else {
+          await dispatch(fetchTodayNursingRecords({ caregiverId, date: selectedDate })).unwrap();
+        }
+      } catch (error) {
+        console.error('간호 데이터 로딩 실패:', error);
+      }
+    };
+
+    loadData();
+  }, []); // 빈 의존성 배열로 한 번만 실행
 
   const medicationRecords = useMemo(
     () => reduxMedicationRecords.map(transformMedicationRecordToUiType),
@@ -220,6 +250,7 @@ export function useNursing() {
     medicationRecords,
     positionChangeRecords,
     nursingNotes,
+    residents,
     selectedResident,
     selectedDate,
     filterType,

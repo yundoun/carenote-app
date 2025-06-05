@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,43 +17,22 @@ import {
   AddRecordForm,
 } from '@/features/nursing';
 import { useNursing } from '@/features/nursing/hooks/useNursing';
-import { useResidents } from '@/features/residents/hooks/useResidents';
-import { useAppDispatch } from '@/store';
-import { fetchResidents } from '@/store/slices/residentsSlice';
 
 export default function NursingPage() {
   const [isAddingRecord, setIsAddingRecord] = useState(false);
-  const dispatch = useAppDispatch();
 
-  // useNursing 훅에서 반환하는 실제 함수명으로 구조 분해 할당합니다.
-  // useNursing.ts에서 addNursingNote, addMedicationRecord, addPositionChangeRecord 이름으로 반환하도록 설정했습니다.
   const {
-    medicationRecords: medications, // UI 타입으로 변환된 데이터
-    positionChangeRecords: positions, // UI 타입으로 변환된 데이터
-    nursingNotes: notes, // UI 타입으로 변환된 데이터
-    isLoading: isNursingLoading,
+    medicationRecords: medications,
+    positionChangeRecords: positions,
+    nursingNotes: notes,
+    isLoading,
     addNursingNote,
     addMedicationRecord,
     addPositionChangeRecord,
-    // selectResident, selectDate 등 다른 필요한 함수들도 가져올 수 있습니다.
+    residents,
   } = useNursing();
 
-  const { residents, isLoading: isResidentsLoading } = useResidents();
-
-  const pageIsLoading = isNursingLoading || isResidentsLoading;
-
-  // 컴포넌트 마운트 시 환자 데이터 가져오기
-  useEffect(() => {
-    console.log('🏥 NursingPage 마운트됨 - fetchResidents 호출 시작');
-    if (residents.length === 0) {
-      dispatch(fetchResidents());
-    }
-  }, [dispatch, residents.length]);
-
-  // 이전에 dispatch 오류를 유발했던 handleAdd... 헬퍼 함수들은 제거합니다.
-  // useNursing에서 반환된 함수를 직접 AddRecordForm에 전달합니다.
-
-  if (pageIsLoading) {
+  if (isLoading) {
     return <div className="container mx-auto p-4">로딩 중...</div>;
   }
 
@@ -77,11 +56,10 @@ export default function NursingPage() {
             </DialogHeader>
             <AddRecordForm
               onSave={() => setIsAddingRecord(false)}
-              // useNursing에서 가져온 함수들을 AddRecordFormProps에 정의된 이름으로 전달합니다.
               addNursingNote={addNursingNote}
               addMedicationRecord={addMedicationRecord}
               addPositionChangeRecord={addPositionChangeRecord}
-              isLoading={isNursingLoading} // 기록 저장 시의 로딩 상태
+              isLoading={isLoading}
               residents={residents}
             />
           </DialogContent>
