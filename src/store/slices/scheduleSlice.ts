@@ -62,6 +62,26 @@ export const createNewSchedule = createAsyncThunk(
   }
 );
 
+// 할 일 완료 상태 업데이트 (서버와 동기화)
+export const updateTodoItemStatus = createAsyncThunk(
+  'schedule/updateTodoItemStatus',
+  async (params: { todoId: string; completed: boolean }) => {
+    const { todoId, completed } = params;
+    const status = completed ? 'COMPLETED' : 'PENDING';
+    
+    const response = await ScheduleService.updateScheduleStatus(
+      todoId,
+      status
+    );
+    
+    return {
+      todoId,
+      completed,
+      ...response.data,
+    };
+  }
+);
+
 export interface TodoItem {
   id: string;
   title: string;
@@ -248,6 +268,13 @@ const scheduleSlice = createSlice({
         todo.completed = !todo.completed;
       }
     },
+    // 낙관적 업데이트: 로컬에서 먼저 상태 변경
+    toggleTodoItemOptimistic: (state, action: PayloadAction<string>) => {
+      const todo = state.todoList.find((item) => item.id === action.payload);
+      if (todo) {
+        todo.completed = !todo.completed;
+      }
+    },
     updateTodoItem: (
       state,
       action: PayloadAction<{ id: string; updates: Partial<TodoItem> }>
@@ -292,12 +319,19 @@ const scheduleSlice = createSlice({
 
         // 시간 포맷팅 (ISO 8601 → HH:MM)
         const timeFormat = (isoString: string) => {
-          const date = new Date(isoString);
-          return date.toLocaleTimeString('ko-KR', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false
-          });
+          try {
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) {
+              return '시간 미정';
+            }
+            return date.toLocaleTimeString('ko-KR', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false
+            });
+          } catch (error) {
+            return '시간 미정';
+          }
         };
 
         return {
@@ -438,6 +472,38 @@ const scheduleSlice = createSlice({
 
         state.isLoading = false;
         state.error = action.error.message || '새 스케줄 생성에 실패했습니다.';
+      })
+
+      // updateTodoItemStatus
+      .addCase(updateTodoItemStatus.pending, (state, action) => {
+        console.log('🔄 updateTodoItemStatus.pending - 할 일 상태 업데이트 시작');
+        // 낙관적 업데이트는 이미 완료된 상태
+      })
+      .addCase(updateTodoItemStatus.fulfilled, (state, action) => {
+        console.log('✅ updateTodoItemStatus.fulfilled - 서버 동기화 성공');
+        console.log('📊 업데이트된 데이터:', action.payload);
+        
+        // 서버 응답으로 상태 확정 (이미 낙관적 업데이트 완료)
+        const { todoId, completed } = action.payload;
+        const todo = state.todoList.find((item) => item.id === todoId);
+        if (todo) {
+          todo.completed = completed;
+        }
+        
+        state.error = null;
+      })
+      .addCase(updateTodoItemStatus.rejected, (state, action) => {
+        console.error('❌ updateTodoItemStatus.rejected - 서버 동기화 실패');
+        console.error('오류 정보:', action.error);
+        
+        // 실패 시 낙관적 업데이트 롤백
+        const todoId = action.meta.arg.todoId;
+        const todo = state.todoList.find((item) => item.id === todoId);
+        if (todo) {
+          todo.completed = !todo.completed; // 원래 상태로 되돌림
+        }
+        
+        state.error = action.error.message || '할 일 상태 업데이트에 실패했습니다.';
       });
   },
 });
@@ -451,6 +517,7 @@ export const {
   updateLocalScheduleStatus,
   addTodoItem,
   toggleTodoItem,
+  toggleTodoItemOptimistic,
   updateTodoItem,
   removeTodoItem,
   syncTodoFromSchedule,

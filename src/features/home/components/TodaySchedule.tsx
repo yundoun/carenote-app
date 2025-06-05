@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { UnifiedTodoItem, PriorityLegend } from '@/components/ui/unified-todo-item';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { toggleTodoItem } from '@/store/slices/scheduleSlice';
+import { toggleTodoItemOptimistic, updateTodoItemStatus } from '@/store/slices/scheduleSlice';
 import { ROUTES } from '@/routes/routes';
 import type { ScheduleItem } from '../types/home.types';
 
@@ -24,7 +24,18 @@ export function TodaySchedule({ scheduleItems, todaySchedule = [], updateTask }:
   const todosToShow = todoList;
 
   const handleTodoToggle = (todoId: string) => {
-    dispatch(toggleTodoItem(todoId));
+    // 현재 완료 상태 확인
+    const todo = todoList.find(item => item.id === todoId);
+    if (!todo) return;
+
+    // 낙관적 업데이트: 즉시 UI 변경
+    dispatch(toggleTodoItemOptimistic(todoId));
+
+    // 서버에 상태 업데이트 요청
+    dispatch(updateTodoItemStatus({
+      todoId,
+      completed: !todo.completed
+    }));
   };
 
   return (
@@ -59,9 +70,9 @@ export function TodaySchedule({ scheduleItems, todaySchedule = [], updateTask }:
                     completed={todo.completed}
                     priority={todo.priority}
                     estimatedTime="30분" // 기본값, 추후 API에서 제공
-                    showTime={true}
-                    time={todo.dueTime}
+                    showTime={false}
                     onToggle={handleTodoToggle}
+                    todoData={todo}
                   />
                 ))}
               </div>
