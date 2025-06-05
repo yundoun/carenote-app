@@ -5,6 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
+import { Loader2 } from 'lucide-react';
 import {
   ResidentSearch,
   UrgentCasesAlert,
@@ -43,9 +45,11 @@ export default function ResidentsPage() {
   // 로딩 상태 표시
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">데이터를 불러오는 중...</div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <div className="w-64 space-y-2">
+          <p className="text-sm text-gray-600 text-center">환자 정보를 불러오는 중...</p>
+          <Progress value={undefined} className="h-2" />
         </div>
       </div>
     );
@@ -54,9 +58,10 @@ export default function ResidentsPage() {
   // 에러 상태 표시
   if (error) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-red-500">오류: {error}</div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-red-500 text-center">
+          <p className="text-lg font-medium">오류가 발생했습니다</p>
+          <p className="text-sm text-gray-600 mt-2">{error}</p>
         </div>
       </div>
     );

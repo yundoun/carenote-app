@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -33,7 +34,15 @@ export default function NursingPage() {
   } = useNursing();
 
   if (isLoading) {
-    return <div className="container mx-auto p-4">로딩 중...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <div className="w-64 space-y-2">
+          <p className="text-sm text-gray-600 text-center">간호 기록을 불러오는 중...</p>
+          <Progress value={undefined} className="h-2" />
+        </div>
+      </div>
+    );
   }
 
   return (

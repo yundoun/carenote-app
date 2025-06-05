@@ -7,6 +7,8 @@ import {
   useHomeData,
 } from '@/features/home';
 import { useAppSelector } from '@/store';
+import { Progress } from '@/components/ui/progress';
+import { Loader2 } from 'lucide-react';
 
 export function HomePage() {
   const { 
@@ -17,9 +19,23 @@ export function HomePage() {
     todaySchedule, 
     urgentAlerts, 
     markAlertRead, 
-    updateTask 
+    updateTask,
+    isLoading
   } = useHomeData();
   const { user } = useAppSelector((state) => state.auth);
+
+  // 로딩 중일 때 프로그래스바 표시
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <div className="w-64 space-y-2">
+          <p className="text-sm text-gray-600 text-center">홈 데이터를 불러오는 중...</p>
+          <Progress value={undefined} className="h-2" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

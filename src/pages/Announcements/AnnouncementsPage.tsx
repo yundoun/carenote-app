@@ -6,7 +6,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import {
   GreetingsSection,
   UrgentAnnouncements,
@@ -75,10 +76,11 @@ export default function AnnouncementsPage() {
 
   if (isLoading && storeAnnouncements.length === 0) {
     return (
-      <div className="container mx-auto p-4 flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
-          <p className="text-gray-600">공지사항을 불러오는 중...</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <div className="w-64 space-y-2">
+          <p className="text-sm text-gray-600 text-center">공지사항을 불러오는 중...</p>
+          <Progress value={undefined} className="h-2" />
         </div>
       </div>
     );
@@ -86,11 +88,11 @@ export default function AnnouncementsPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-4 flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <AlertCircle className="h-8 w-8 mx-auto mb-4 text-red-500" />
-          <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={handleRefresh} variant="outline">
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-red-500 text-center">
+          <p className="text-lg font-medium">오류가 발생했습니다</p>
+          <p className="text-sm text-gray-600 mt-2">{error}</p>
+          <Button onClick={handleRefresh} variant="outline" className="mt-4">
             <RefreshCw className="h-4 w-4 mr-2" />
             다시 시도
           </Button>

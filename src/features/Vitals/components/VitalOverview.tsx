@@ -1,5 +1,7 @@
 import { UrgentAlert } from './UrgentAlert';
 import { VitalCard } from './VitalCard';
+import { Progress } from '@/components/ui/progress';
+import { Loader2 } from 'lucide-react';
 import { useVitals } from '../hooks/useVitals';
 
 export const VitalOverview = () => {
@@ -16,6 +18,18 @@ export const VitalOverview = () => {
     cancelVitalRecording,
     isLoading
   } = useVitals();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <div className="w-64 space-y-2">
+          <p className="text-sm text-gray-600 text-center">바이탈 데이터를 불러오는 중...</p>
+          <Progress value={undefined} className="h-2" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Loader2 } from 'lucide-react';
 import { useSchedule, useTodoList } from '@/features/schedule/hooks';
 import {
   TodayShiftOverview,
@@ -35,12 +37,14 @@ export function SchedulePage() {
 
   const calendarDays = generateCalendarDays;
 
-  // 로딩 중일 때
-  if (isLoading) {
+  // 로딩 중이거나 데이터가 없을 때
+  if (isLoading || !todayShift) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">근무 정보를 불러오는 중...</div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <div className="w-64 space-y-2">
+          <p className="text-sm text-gray-600 text-center">근무 정보를 불러오는 중...</p>
+          <Progress value={undefined} className="h-2" />
         </div>
       </div>
     );
@@ -49,20 +53,10 @@ export function SchedulePage() {
   // 에러가 발생했을 때
   if (error) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-red-600">오류: {error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  // todayShift가 아직 로드되지 않았을 때
-  if (!todayShift) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">근무 정보를 준비 중...</div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-red-500 text-center">
+          <p className="text-lg font-medium">오류가 발생했습니다</p>
+          <p className="text-sm text-gray-600 mt-2">{error}</p>
         </div>
       </div>
     );

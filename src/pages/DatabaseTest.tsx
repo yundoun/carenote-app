@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 import { ResidentsService } from '@/services/residents.service';
 import { AnnouncementsService } from '@/services/announcements.service';
 import type { ResidentListItem } from '@/services/residents.service';
@@ -108,7 +110,13 @@ export function DatabaseTest() {
           <CardContent>
             <p className="text-sm mb-4">{testResults.residentsTest}</p>
             {loading ? (
-              <p>로딩 중...</p>
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                <div className="w-48 space-y-2">
+                  <p className="text-sm text-gray-600 text-center">데이터베이스 테스트 중...</p>
+                  <Progress value={undefined} className="h-2" />
+                </div>
+              </div>
             ) : error ? (
               <p className="text-red-500">에러: {error}</p>
             ) : (

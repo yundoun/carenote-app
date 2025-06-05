@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Heart, FileText, Shield } from 'lucide-react';
+import { BookOpen, Heart, FileText, Shield, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import {
   EducationSearch,
   WorkRelatedRecommendations,
@@ -172,17 +173,27 @@ export default function EducationPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="text-center py-8">
-          <h2 className="text-xl font-semibold text-red-600 mb-2">
-            오류가 발생했습니다
-          </h2>
-          <p className="text-gray-600">{error}</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-red-500 text-center">
+          <p className="text-lg font-medium">오류가 발생했습니다</p>
+          <p className="text-sm text-gray-600 mt-2">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
             다시 시도
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading && allMaterials.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <div className="w-64 space-y-2">
+          <p className="text-sm text-gray-600 text-center">교육자료를 불러오는 중...</p>
+          <Progress value={undefined} className="h-2" />
         </div>
       </div>
     );
@@ -205,12 +216,6 @@ export default function EducationPage() {
           <p>이번 주 목표: 5건</p>
         </div>
       </div>
-
-      {isLoading && (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      )}
 
       <EducationSearch
         searchQuery={searchQuery}
