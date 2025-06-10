@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
-import { useSchedule, useTodoList } from '@/features/schedule/hooks';
+import { useSchedule } from '@/features/schedule/hooks';
+import { useAppSelector } from '@/store';
 import {
   TodayShiftOverview,
   HandoverNotes,
@@ -27,13 +28,8 @@ export function SchedulePage() {
     toggleFullscreen,
   } = useSchedule();
 
-  const {
-    todoItems,
-    toggleTodo,
-    completedTasks,
-    totalTasks,
-    progressPercentage,
-  } = useTodoList(todayShift?.todoList || []);
+  // Redux store에서 직접 todoList 사용
+  const { todoList } = useAppSelector((state) => state.schedule);
 
   const calendarDays = generateCalendarDays;
 
@@ -43,7 +39,9 @@ export function SchedulePage() {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
         <div className="w-64 space-y-2">
-          <p className="text-sm text-gray-600 text-center">근무 정보를 불러오는 중...</p>
+          <p className="text-sm text-gray-600 text-center">
+            근무 정보를 불러오는 중...
+          </p>
           <Progress value={undefined} className="h-2" />
         </div>
       </div>
@@ -93,14 +91,8 @@ export function SchedulePage() {
           {/* 인수인계 사항 */}
           <HandoverNotes notes={todayShift.handoverNotes || []} />
 
-          {/* 오늘의 할 일 */}
-          <TodoList
-            todos={todoItems}
-            onToggleTodo={toggleTodo}
-            completedTasks={completedTasks}
-            totalTasks={totalTasks}
-            progressPercentage={progressPercentage}
-          />
+          {/* 오늘의 할 일 - Redux store의 todoList 직접 사용 */}
+          <TodoList />
 
           {/* 담당 어르신 요약 */}
           <AssignedSeniors seniors={todayShift.assignedSeniors || []} />

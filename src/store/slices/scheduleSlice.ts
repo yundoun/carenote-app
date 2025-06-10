@@ -67,17 +67,17 @@ export const updateTodoItemStatus = createAsyncThunk(
   'schedule/updateTodoItemStatus',
   async (params: { scheduleId: string; completed: boolean }) => {
     const { scheduleId, completed } = params;
-    
+
     // care_schedules 테이블의 status 필드 업데이트
     const newStatus = completed ? 'COMPLETED' : 'PENDING';
-    
+
     console.log(`🔄 할 일 상태 업데이트: ${scheduleId} -> ${newStatus}`);
-    
+
     const response = await ScheduleService.updateScheduleStatus(
       scheduleId,
       newStatus
     );
-    
+
     return {
       scheduleId,
       completed,
@@ -295,7 +295,7 @@ const scheduleSlice = createSlice({
     // API에서 가져온 스케줄 데이터를 할 일 목록으로 동기화 (서버 상태가 정답)
     syncTodoFromSchedule: (state, action: PayloadAction<any[]>) => {
       const schedules = action.payload;
-      
+
       // API 스케줄 데이터를 TodoItem 형태로 변환
       const newTodoList: TodoItem[] = schedules.map((schedule) => {
         // 우선순위 결정 로직
@@ -308,12 +308,12 @@ const scheduleSlice = createSlice({
 
         // 카테고리 매핑
         const categoryMap: Record<string, TodoItem['category']> = {
-          'MEDICATION': 'medicine',
-          'VITAL_CHECK': 'vital',
-          'MEAL_ASSISTANCE': 'meal',
-          'POSITION_CHANGE': 'care',
-          'EXERCISE': 'care',
-          'HYGIENE': 'care',
+          MEDICATION: 'medicine',
+          VITAL_CHECK: 'vital',
+          MEAL_ASSISTANCE: 'meal',
+          POSITION_CHANGE: 'care',
+          EXERCISE: 'care',
+          HYGIENE: 'care',
         };
 
         // 시간 포맷팅 (ISO 8601 → HH:MM)
@@ -323,10 +323,10 @@ const scheduleSlice = createSlice({
             if (isNaN(date.getTime())) {
               return '시간 미정';
             }
-            return date.toLocaleTimeString('ko-KR', { 
-              hour: '2-digit', 
+            return date.toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
               minute: '2-digit',
-              hour12: false
+              hour12: false,
             });
           } catch (error) {
             return '시간 미정';
@@ -382,6 +382,74 @@ const scheduleSlice = createSlice({
 
         state.isLoading = false;
         state.todayWorkInfo = action.payload;
+
+        // 받은 스케줄 데이터를 할 일 목록으로 자동 동기화
+        if (
+          action.payload.assignedSchedules &&
+          action.payload.assignedSchedules.length > 0
+        ) {
+          console.log(
+            '📋 할 일 목록 자동 동기화 시작:',
+            action.payload.assignedSchedules
+          );
+
+          // API 스케줄 데이터를 TodoItem 형태로 변환
+          const newTodoList: TodoItem[] = action.payload.assignedSchedules.map(
+            (schedule: any) => {
+              // 우선순위 결정 로직
+              let priority: 'low' | 'medium' | 'high' = 'medium';
+              if (
+                schedule.priority === 'HIGH' ||
+                schedule.type === 'MEDICATION'
+              ) {
+                priority = 'high';
+              } else if (schedule.priority === 'LOW') {
+                priority = 'low';
+              }
+
+              // 카테고리 매핑
+              const categoryMap: Record<string, TodoItem['category']> = {
+                MEDICATION: 'medicine',
+                VITAL_CHECK: 'vital',
+                MEAL_ASSISTANCE: 'meal',
+                POSITION_CHANGE: 'care',
+                EXERCISE: 'care',
+                HYGIENE: 'care',
+              };
+
+              // 시간 포맷팅 (ISO 8601 → HH:MM)
+              const timeFormat = (isoString: string) => {
+                try {
+                  const date = new Date(isoString);
+                  if (isNaN(date.getTime())) {
+                    return '시간 미정';
+                  }
+                  return date.toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                  });
+                } catch (error) {
+                  return '시간 미정';
+                }
+              };
+
+              return {
+                id: schedule.id,
+                title: schedule.title,
+                description: schedule.description,
+                // 서버 상태가 정답 - 항상 서버 데이터 사용
+                completed: schedule.status === 'COMPLETED',
+                priority,
+                dueTime: timeFormat(schedule.scheduled_time),
+                category: categoryMap[schedule.type] || 'other',
+              };
+            }
+          );
+
+          state.todoList = newTodoList;
+          console.log('📋 할 일 목록 동기화 완료:', state.todoList);
+        }
 
         console.log('📋 Store 업데이트 완료:', state.todayWorkInfo);
       })
@@ -476,13 +544,17 @@ const scheduleSlice = createSlice({
 
       // updateTodoItemStatus - care_schedules 테이블 status 업데이트
       .addCase(updateTodoItemStatus.pending, (state, action) => {
-        console.log('🔄 updateTodoItemStatus.pending - care_schedules 상태 업데이트 시작');
+        console.log(
+          '🔄 updateTodoItemStatus.pending - care_schedules 상태 업데이트 시작'
+        );
         // 낙관적 업데이트는 이미 toggleTodoItemOptimistic에서 완료
       })
       .addCase(updateTodoItemStatus.fulfilled, (state, action) => {
-        console.log('✅ updateTodoItemStatus.fulfilled - care_schedules 업데이트 성공');
+        console.log(
+          '✅ updateTodoItemStatus.fulfilled - care_schedules 업데이트 성공'
+        );
         console.log('📊 업데이트된 스케줄 데이터:', action.payload);
-        
+
         // care_schedules 테이블 업데이트 성공 - Redux 상태를 서버 상태와 동기화
         const { scheduleId, completed, updatedSchedule } = action.payload;
         const todo = state.todoList.find((item) => item.id === scheduleId);
@@ -490,21 +562,25 @@ const scheduleSlice = createSlice({
           // 서버에서 받은 실제 status를 기반으로 completed 상태 설정
           todo.completed = updatedSchedule.status === 'COMPLETED';
         }
-        
+
         state.error = null;
       })
       .addCase(updateTodoItemStatus.rejected, (state, action) => {
-        console.error('❌ updateTodoItemStatus.rejected - care_schedules 업데이트 실패');
+        console.error(
+          '❌ updateTodoItemStatus.rejected - care_schedules 업데이트 실패'
+        );
         console.error('오류 정보:', action.error);
-        
+
         // 실패 시 낙관적 업데이트 롤백
         const scheduleId = action.meta.arg.scheduleId;
         const todo = state.todoList.find((item) => item.id === scheduleId);
         if (todo) {
           todo.completed = !todo.completed; // 원래 상태로 되돌림
         }
-        
-        state.error = action.error.message || 'care_schedules 상태 업데이트에 실패했습니다.';
+
+        state.error =
+          action.error.message ||
+          'care_schedules 상태 업데이트에 실패했습니다.';
       });
   },
 });
