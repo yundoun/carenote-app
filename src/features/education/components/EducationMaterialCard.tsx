@@ -61,10 +61,6 @@ export function EducationMaterialCard({
         <CardContent className="p-4 w-2/3">
           <div className="flex justify-between items-start mb-2">
             <Badge className="mb-2">{material.category}</Badge>
-            <div className="flex items-center gap-1">
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs">{material.rating}</span>
-            </div>
           </div>
           <h3 className="font-bold mb-1 text-sm">{material.title}</h3>
           <p className="text-xs text-gray-600 mb-2">{material.description}</p>

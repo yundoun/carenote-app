@@ -5,9 +5,9 @@ export interface EducationMaterial {
   duration: string;
   category: string;
   thumbnail: string;
+  contentUrl?: string;
   progress?: number;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
-  rating: number;
   description: string;
   relatedToWork?: boolean;
 }

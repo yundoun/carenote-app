@@ -10,7 +10,7 @@ import {
   EducationMaterial,
   EducationCategory,
 } from '@/features/education';
-import { useAppSelector } from '@/store';
+import { extractYouTubeVideoId } from '@/lib/utils';
 
 // 카테고리 아이콘 매핑 함수
 const getCategoryIcon = (categoryName: string) => {
@@ -36,19 +36,29 @@ const convertToFeatureEducationMaterial = (
     id: storeMaterial.id,
     title: storeMaterial.title,
     type: storeMaterial.type === 'VIDEO' ? 'video' : 'document',
-    duration: storeMaterial.content.duration
+    duration: storeMaterial.content?.duration
       ? `${Math.floor(storeMaterial.content.duration / 60)}분`
+      : storeMaterial.duration
+      ? `${Math.floor(storeMaterial.duration / 60)}분`
       : '미정',
-    category: storeMaterial.category,
+    category: storeMaterial.category || storeMaterial.category_name,
     thumbnail: storeMaterial.thumbnail || '',
-    progress: storeMaterial.userProgress?.completionRate || 0,
-    difficulty: storeMaterial.difficulty.toLowerCase() as
+    contentUrl:
+      storeMaterial.content?.url ||
+      storeMaterial.content_url ||
+      storeMaterial.contentUrl,
+    progress:
+      storeMaterial.userProgress?.completionRate ||
+      storeMaterial.user_progress?.completion_rate ||
+      0,
+    difficulty: (storeMaterial.difficulty || 'beginner').toLowerCase() as
       | 'beginner'
       | 'intermediate'
       | 'advanced',
-    rating: 4.5, // 임시값, 추후 실제 평점 데이터로 변경
     description: storeMaterial.description,
-    relatedToWork: storeMaterial.category === '주요업무',
+    relatedToWork:
+      storeMaterial.category === '주요업무' ||
+      storeMaterial.category_name === '주요업무',
   };
 };
 
@@ -82,6 +92,9 @@ const tempCategories: EducationCategory[] = [
 
 export default function EducationPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+
+  console.log('현재 selectedVideoId:', selectedVideoId);
 
   // 현재 사용자 정보 (실제로는 auth에서 가져와야 함)
   const userId = 'current-user-id'; // TODO: 실제 사용자 ID로 교체
@@ -150,9 +163,8 @@ export default function EducationPage() {
   };
 
   const handleStartLearning = (material: EducationMaterial) => {
-    // 학습 시작 로직 구현 - 상세 페이지로 이동하거나 학습 모달 표시
-    console.log('학습 시작:', material.title);
-    // TODO: React Router로 상세 페이지 이동 또는 모달 표시
+    // 학습 시작 로직 구현 - handleMaterialClick과 동일
+    handleMaterialClick(material);
   };
 
   const handleCategoryClick = (category: EducationCategory) => {
@@ -168,7 +180,31 @@ export default function EducationPage() {
   const handleMaterialClick = (material: EducationMaterial) => {
     // 교육 자료 상세 정보 로드 및 표시
     console.log('교육 자료 선택:', material.title);
-    // TODO: 상세 정보 모달 표시 또는 상세 페이지로 이동
+    console.log('material:', material);
+    console.log('material.type:', material.type);
+    console.log('material.contentUrl:', material.contentUrl);
+
+    // 비디오인 경우 유튜브 플레이어 표시
+    if (material.type === 'video' && material.contentUrl) {
+      const videoId = extractYouTubeVideoId(material.contentUrl);
+      console.log('추출된 videoId:', videoId);
+      if (videoId) {
+        console.log('setSelectedVideoId 호출:', videoId);
+        setSelectedVideoId(videoId);
+        // 플레이어 영역으로 스크롤
+        setTimeout(() => {
+          document.getElementById('video-player')?.scrollIntoView({
+            behavior: 'smooth',
+          });
+        }, 100);
+      } else {
+        console.log('videoId 추출 실패, 새 창으로 열기');
+        // 유튜브 ID 추출 실패 시 새 창으로 열기
+        window.open(material.contentUrl, '_blank');
+      }
+    } else {
+      console.log('비디오가 아니거나 contentUrl이 없음');
+    }
   };
 
   if (error) {
@@ -192,7 +228,9 @@ export default function EducationPage() {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
         <div className="w-64 space-y-2">
-          <p className="text-sm text-gray-600 text-center">교육자료를 불러오는 중...</p>
+          <p className="text-sm text-gray-600 text-center">
+            교육자료를 불러오는 중...
+          </p>
           <Progress value={undefined} className="h-2" />
         </div>
       </div>
@@ -237,6 +275,34 @@ export default function EducationPage() {
         recentMaterials={recentMaterials}
         onMaterialClick={handleMaterialClick}
       />
+
+      {/* 유튜브 비디오 플레이어 */}
+      {selectedVideoId && (
+        <div
+          id="video-player"
+          className="mt-8 bg-white rounded-lg shadow-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">동영상 학습</h3>
+            <button
+              onClick={() => setSelectedVideoId(null)}
+              className="text-gray-500 hover:text-gray-700 text-xl font-bold">
+              ×
+            </button>
+          </div>
+          <div className="aspect-video w-full">
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${selectedVideoId}?autoplay=1`}
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="rounded-lg"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
