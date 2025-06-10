@@ -1,5 +1,12 @@
-import { useState, useEffect } from 'react';
-import { BookOpen, Heart, FileText, Shield, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  BookOpen,
+  Heart,
+  FileText,
+  Shield,
+  Loader2,
+  Settings,
+} from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import {
   EducationSearch,
@@ -15,16 +22,16 @@ import { extractYouTubeVideoId } from '@/lib/utils';
 // 카테고리 아이콘 매핑 함수
 const getCategoryIcon = (categoryName: string) => {
   switch (categoryName) {
-    case '주요업무':
-      return <BookOpen className="h-5 w-5" />;
     case '케어기술':
       return <Heart className="h-5 w-5" />;
-    case '기록지 입력방법':
-      return <FileText className="h-5 w-5" />;
     case '안전관리':
       return <Shield className="h-5 w-5" />;
-    default:
+    case '주요업무':
       return <BookOpen className="h-5 w-5" />;
+    case '기록지 입력방법':
+      return <FileText className="h-5 w-5" />;
+    default:
+      return <Settings className="h-5 w-5" />;
   }
 };
 
@@ -62,39 +69,47 @@ const convertToFeatureEducationMaterial = (
   };
 };
 
-// 임시 카테고리 데이터 (추후 Redux store에서 가져올 예정)
-const tempCategories: EducationCategory[] = [
-  {
-    id: 'cat-001',
-    label: '주요업무',
-    icon: <BookOpen className="h-5 w-5" />,
-    count: 12,
-  },
-  {
-    id: 'cat-002',
-    label: '케어기술',
-    icon: <Heart className="h-5 w-5" />,
-    count: 8,
-  },
-  {
-    id: 'cat-003',
-    label: '기록지 입력방법',
-    icon: <FileText className="h-5 w-5" />,
-    count: 6,
-  },
-  {
-    id: 'cat-004',
-    label: '안전관리',
-    icon: <Shield className="h-5 w-5" />,
-    count: 5,
-  },
-];
+// Redux store에서 가져온 카테고리 기반으로 동적 카테고리 생성 함수
+const generateCategoriesFromStore = (
+  storeCategories: any[],
+  materials: any[]
+): EducationCategory[] => {
+  const categoryCounts = new Map<string, number>();
+
+  // 모든 materials의 category를 수집하고 카운트
+  materials.forEach((material) => {
+    const categoryName = material.category_name || material.category;
+    if (categoryName) {
+      categoryCounts.set(
+        categoryName,
+        (categoryCounts.get(categoryName) || 0) + 1
+      );
+    }
+  });
+
+  // store 카테고리를 기반으로 모든 카테고리 반환 (중복 제거 및 자료가 없어도 0개로 표시)
+  const uniqueCategories = storeCategories.reduce((acc: any[], category: any) => {
+    if (!acc.some((existing: any) => existing.name === category.name)) {
+      acc.push(category);
+    }
+    return acc;
+  }, [] as any[]);
+
+  const result = uniqueCategories.map((category) => ({
+    id: `category-${category.id}`,
+    label: category.name,
+    icon: getCategoryIcon(category.name),
+    count: categoryCounts.get(category.name) || 0,
+  }));
+
+  console.log('최종 카테고리 결과:', result);
+  return result;
+};
 
 export default function EducationPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-
-  console.log('현재 selectedVideoId:', selectedVideoId);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // 현재 사용자 정보 (실제로는 auth에서 가져와야 함)
   const userId = 'current-user-id'; // TODO: 실제 사용자 ID로 교체
@@ -125,32 +140,49 @@ export default function EducationPage() {
     userId,
   ]);
 
-  // Redux store의 데이터를 features/education 타입으로 변환
-  const recommendedMaterials = storeRecommendedMaterials.map(
-    convertToFeatureEducationMaterial
-  );
+  // Store 카테고리 기반으로 동적 카테고리 생성
+  const categories = useMemo(() => {
+    const result = generateCategoriesFromStore(storeCategories, allMaterials);
+    return result;
+  }, [storeCategories, allMaterials]);
 
-  // 최근 자료도 전체 자료에서 필터링 (실제로는 별도 상태로 관리 가능)
-  const recentMaterials = allMaterials
-    .filter((m) => m.userProgress?.lastViewedAt)
-    .sort((a, b) => {
-      const aTime = a.userProgress?.lastViewedAt || '';
-      const bTime = b.userProgress?.lastViewedAt || '';
-      return bTime.localeCompare(aTime);
-    })
-    .slice(0, 10)
-    .map(convertToFeatureEducationMaterial);
+  // 선택된 카테고리가 있을 때는 전체 자료에서 필터링된 결과를 표시
+  const getDisplayMaterials = () => {
+    if (selectedCategory) {
+      // 카테고리가 선택된 경우 해당 카테고리의 모든 자료를 표시
+      const categoryMaterials = allMaterials.filter((material) => {
+        const categoryName = material.category_name || material.category;
+        return categoryName === selectedCategory;
+      });
 
-  // API에서 가져온 카테고리 데이터를 변환
-  const categories: EducationCategory[] =
-    storeCategories.length > 0
-      ? storeCategories.map((cat) => ({
-          id: cat.id,
-          label: cat.name,
-          icon: getCategoryIcon(cat.name),
-          count: 0, // 실제로는 각 카테고리별 자료 수를 계산해야 함
-        }))
-      : tempCategories;
+      return categoryMaterials.map(convertToFeatureEducationMaterial);
+    } else {
+      // 카테고리가 선택되지 않은 경우 기존 추천 자료 사용
+      return storeRecommendedMaterials.map(convertToFeatureEducationMaterial);
+    }
+  };
+
+  const getFilteredRecentMaterials = () => {
+    let filtered = allMaterials.filter((m) => m.userProgress?.lastViewedAt);
+
+    if (selectedCategory) {
+      filtered = filtered.filter((material) => {
+        const categoryName = material.category_name || material.category;
+        return categoryName === selectedCategory;
+      });
+    }
+    return filtered
+      .sort((a, b) => {
+        const aTime = a.userProgress?.lastViewedAt || '';
+        const bTime = b.userProgress?.lastViewedAt || '';
+        return bTime.localeCompare(aTime);
+      })
+      .slice(0, 10)
+      .map(convertToFeatureEducationMaterial);
+  };
+
+  const recommendedMaterials = getDisplayMaterials();
+  const recentMaterials = getFilteredRecentMaterials();
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -168,28 +200,39 @@ export default function EducationPage() {
   };
 
   const handleCategoryClick = (category: EducationCategory) => {
-    // 선택된 카테고리로 자료 필터링
-    console.log('카테고리 선택:', category.label);
-    loadMaterials({
-      userId,
-      categoryId: category.id,
-      searchQuery: searchQuery || undefined,
-    });
+    // 카테고리 기반 필터링
+    const categoryName = category.label;
+    if (selectedCategory === categoryName) {
+      // 이미 선택된 카테고리를 다시 클릭하면 필터 해제
+      setSelectedCategory(null);
+      console.log('카테고리 필터 해제');
+    } else {
+      setSelectedCategory(categoryName);
+      console.log('카테고리 선택:', categoryName);
+      // 해당 카테고리를 가진 자료들 확인
+      const materialsWithCategory = allMaterials.filter((m) => {
+        const materialCategory = m.category_name || m.category;
+        return materialCategory === categoryName;
+      });
+      console.log(
+        `"${categoryName}" 카테고리를 가진 자료 수:`,
+        materialsWithCategory.length
+      );
+      console.log(
+        '해당 자료들:',
+        materialsWithCategory.map((m) => ({
+          title: m.title,
+          category: m.category_name || m.category,
+        }))
+      );
+    }
   };
 
   const handleMaterialClick = (material: EducationMaterial) => {
-    // 교육 자료 상세 정보 로드 및 표시
-    console.log('교육 자료 선택:', material.title);
-    console.log('material:', material);
-    console.log('material.type:', material.type);
-    console.log('material.contentUrl:', material.contentUrl);
-
     // 비디오인 경우 유튜브 플레이어 표시
     if (material.type === 'video' && material.contentUrl) {
       const videoId = extractYouTubeVideoId(material.contentUrl);
-      console.log('추출된 videoId:', videoId);
       if (videoId) {
-        console.log('setSelectedVideoId 호출:', videoId);
         setSelectedVideoId(videoId);
         // 플레이어 영역으로 스크롤
         setTimeout(() => {
@@ -198,12 +241,9 @@ export default function EducationPage() {
           });
         }, 100);
       } else {
-        console.log('videoId 추출 실패, 새 창으로 열기');
         // 유튜브 ID 추출 실패 시 새 창으로 열기
         window.open(material.contentUrl, '_blank');
       }
-    } else {
-      console.log('비디오가 아니거나 contentUrl이 없음');
     }
   };
 
@@ -267,6 +307,9 @@ export default function EducationPage() {
 
       <EducationCategories
         categories={categories}
+        selectedCategoryId={
+          selectedCategory ? `category-${selectedCategory}` : null
+        }
         onCategoryClick={handleCategoryClick}
       />
 

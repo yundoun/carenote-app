@@ -17,7 +17,6 @@ export interface EducationMaterialListItem {
   duration: number | null;
   description: string | null;
   learning_objectives: string[] | null;
-  tags: string[] | null;
   view_count: number | null;
   created_at: string | null;
   updated_at: string | null;
@@ -116,7 +115,6 @@ export class EducationService {
           duration,
           description,
           learning_objectives,
-          tags,
           view_count,
           created_at,
           updated_at,
@@ -166,7 +164,6 @@ export class EducationService {
           duration: item.duration,
           description: item.description,
           learning_objectives: item.learning_objectives,
-          tags: item.tags,
           view_count: item.view_count,
           created_at: item.created_at,
           updated_at: item.updated_at,
@@ -246,7 +243,6 @@ export class EducationService {
         duration: data.duration,
         description: data.description,
         learning_objectives: data.learning_objectives,
-        tags: data.tags,
         view_count: (data.view_count || 0) + 1,
         created_at: data.created_at,
         updated_at: data.updated_at,
@@ -444,7 +440,6 @@ export class EducationService {
           duration,
           description,
           learning_objectives,
-          tags,
           view_count,
           created_at,
           updated_at,
@@ -474,7 +469,6 @@ export class EducationService {
             duration: material.duration,
             description: material.description,
             learning_objectives: material.learning_objectives,
-            tags: material.tags,
             view_count: material.view_count,
             created_at: material.created_at,
             updated_at: material.updated_at,
@@ -533,7 +527,6 @@ export class EducationService {
           duration,
           description,
           learning_objectives,
-          tags,
           view_count,
           created_at,
           updated_at,
@@ -576,7 +569,6 @@ export class EducationService {
             duration: item.duration,
             description: item.description,
             learning_objectives: item.learning_objectives,
-            tags: item.tags,
             view_count: item.view_count,
             created_at: item.created_at,
             updated_at: item.updated_at,

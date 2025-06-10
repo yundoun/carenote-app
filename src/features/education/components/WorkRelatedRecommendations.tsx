@@ -1,7 +1,7 @@
 import { Star, Play, BookOpen } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { EducationMaterial } from '../../types/education.types';
+import { EducationMaterial } from '../types/education.types';
 
 interface WorkRelatedRecommendationsProps {
   materials: EducationMaterial[];

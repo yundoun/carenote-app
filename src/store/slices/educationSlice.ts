@@ -25,7 +25,6 @@ export interface EducationMaterial {
   };
   description: string;
   thumbnail?: string;
-  tags: string[];
   viewCount: number;
   learningObjectives: string[];
   relatedMaterials: string[];
@@ -193,7 +192,6 @@ function transformApiMaterial(
     },
     description: apiMaterial.description || '',
     thumbnail: apiMaterial.thumbnail || undefined,
-    tags: apiMaterial.tags || [],
     viewCount: apiMaterial.view_count || 0,
     learningObjectives: apiMaterial.learning_objectives || [],
     relatedMaterials: [], // API에서 제공되지 않음
@@ -463,8 +461,7 @@ function filterMaterials(state: EducationState): EducationMaterial[] {
     filtered = filtered.filter(
       (m) =>
         m.title.toLowerCase().includes(query) ||
-        m.description.toLowerCase().includes(query) ||
-        m.tags.some((tag) => tag.toLowerCase().includes(query))
+        m.description.toLowerCase().includes(query)
     );
   }
 

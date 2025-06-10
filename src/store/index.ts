@@ -4,12 +4,12 @@ import { rootReducer } from './rootReducer';
 // 로깅 미들웨어 (개발 환경에서만)
 const loggerMiddleware = (store: any) => (next: any) => (action: any) => {
   if (process.env.NODE_ENV === 'development') {
-    console.group(`🔄 Action: ${action.type}`);
-    console.log('Previous State:', store.getState());
+    // console.group(`🔄 Action: ${action.type}`);
+    // console.log('Previous State:', store.getState());
     const result = next(action);
-    console.log('Action:', action);
-    console.log('Next State:', store.getState());
-    console.groupEnd();
+    // console.log('Action:', action);
+    // console.log('Next State:', store.getState());
+    // console.groupEnd();
     return result;
   }
   return next(action);
