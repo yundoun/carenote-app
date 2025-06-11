@@ -89,7 +89,7 @@ export function SchedulePage() {
           <TodayShiftOverview shift={todayShift} />
 
           {/* 인수인계 사항 */}
-          <HandoverNotes notes={todayShift.handoverNotes || []} />
+          {/* <HandoverNotes notes={todayShift.handoverNotes || []} /> */}
 
           {/* 오늘의 할 일 - Redux store의 todoList 직접 사용 */}
           <TodoList />
