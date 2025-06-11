@@ -24,7 +24,13 @@ export interface VitalAlert {
   id: string;
   seniorId: string;
   seniorName: string;
-  type: 'high_bp' | 'low_bp' | 'high_temp' | 'low_temp' | 'irregular_hr' | 'other';
+  type:
+    | 'high_bp'
+    | 'low_bp'
+    | 'high_temp'
+    | 'low_temp'
+    | 'irregular_hr'
+    | 'other';
   severity: 'low' | 'medium' | 'high' | 'critical';
   message: string;
   timestamp: string;
@@ -71,7 +77,7 @@ export const createVitalRecord = createAsyncThunk(
   'vitals/createRecord',
   async (vitalData: {
     resident_id: string;
-    measured_by: string;
+    measurer_id: string;
     measured_at: string;
     systolic_bp?: number;
     diastolic_bp?: number;
@@ -150,7 +156,9 @@ export const deleteMultipleVitalRecords = createAsyncThunk(
 );
 
 // API 응답을 Redux 타입으로 변환하는 함수들
-function transformApiVitalToRedux(apiRecord: VitalRecordWithResident): VitalSigns {
+function transformApiVitalToRedux(
+  apiRecord: VitalRecordWithResident
+): VitalSigns {
   return {
     bloodPressureSystolic: apiRecord.systolic_bp || 0,
     bloodPressureDiastolic: apiRecord.diastolic_bp || 0,
@@ -167,6 +175,12 @@ function transformApiVitalToRedux(apiRecord: VitalRecordWithResident): VitalSign
 
 function transformVitalStatusToSeniors(statusInfo: VitalStatusInfo): Senior[] {
   return statusInfo.residents.map((resident) => {
+    // 바이탈 히스토리에서 가장 최신 기록을 먼저 찾음 (notes 포함)
+    const latestHistoryRecord =
+      resident.vital_history && resident.vital_history.length > 0
+        ? resident.vital_history[0] // 가장 최신 기록
+        : null;
+
     const lastVitals = resident.last_vitals;
     const latestVitals: VitalSigns | null = lastVitals
       ? {
@@ -180,6 +194,11 @@ function transformVitalStatusToSeniors(statusInfo: VitalStatusInfo): Senior[] {
           temperature: lastVitals.temperature || 0,
           timestamp: lastVitals.measured_at || '',
           recordedBy: '간병인',
+          // API에서 제공하는 notes나 히스토리에서 최신 메모를 가져옴
+          notes:
+            (lastVitals as any).notes ||
+            latestHistoryRecord?.notes ||
+            undefined,
         }
       : null;
 
@@ -193,7 +212,8 @@ function transformVitalStatusToSeniors(statusInfo: VitalStatusInfo): Senior[] {
           seniorId: resident.id,
           seniorName: resident.name,
           type: 'high_bp',
-          severity: latestVitals.bloodPressureSystolic > 160 ? 'high' : 'medium',
+          severity:
+            latestVitals.bloodPressureSystolic > 160 ? 'high' : 'medium',
           message: `혈압이 높습니다 (${latestVitals.bloodPressureSystolic}/${latestVitals.bloodPressureDiastolic})`,
           timestamp: latestVitals.timestamp,
           acknowledged: false,
@@ -240,18 +260,20 @@ function transformVitalStatusToSeniors(statusInfo: VitalStatusInfo): Senior[] {
     }
 
     // 바이탈 히스토리 변환
-    const vitalHistory: VitalSigns[] = (resident.vital_history || []).map((record: any) => ({
-      bloodPressureSystolic: record.systolic_bp || 0,
-      bloodPressureDiastolic: record.diastolic_bp || 0,
-      heartRate: record.heart_rate || 0,
-      temperature: record.temperature || 0,
-      weight: record.weight,
-      bloodSugar: record.blood_sugar,
-      oxygenSaturation: record.blood_oxygen,
-      timestamp: record.measured_at,
-      notes: record.notes || undefined,
-      recordedBy: '간병인',
-    }));
+    const vitalHistory: VitalSigns[] = (resident.vital_history || []).map(
+      (record: any) => ({
+        bloodPressureSystolic: record.systolic_bp || 0,
+        bloodPressureDiastolic: record.diastolic_bp || 0,
+        heartRate: record.heart_rate || 0,
+        temperature: record.temperature || 0,
+        weight: record.weight,
+        bloodSugar: record.blood_sugar,
+        oxygenSaturation: record.blood_oxygen,
+        timestamp: record.measured_at,
+        notes: record.notes || undefined,
+        recordedBy: '간병인',
+      })
+    );
 
     return {
       id: resident.id,
@@ -340,21 +362,28 @@ const vitalsSlice = createSlice({
     setSelectedSenior: (state, action: PayloadAction<Senior | null>) => {
       state.selectedSenior = action.payload;
     },
-    setFilterStatus: (state, action: PayloadAction<VitalsState['filterStatus']>) => {
+    setFilterStatus: (
+      state,
+      action: PayloadAction<VitalsState['filterStatus']>
+    ) => {
       state.filterStatus = action.payload;
     },
     startRecording: (state, action: PayloadAction<string>) => {
       state.isRecording = true;
-      state.selectedSenior = state.seniors.find(s => s.id === action.payload) || null;
+      state.selectedSenior =
+        state.seniors.find((s) => s.id === action.payload) || null;
       state.newVitals = {};
     },
     updateNewVitals: (state, action: PayloadAction<Partial<VitalSigns>>) => {
       state.newVitals = { ...state.newVitals, ...action.payload };
     },
-    saveVitalRecord: (state, action: PayloadAction<{ seniorId: string; vitals: VitalSigns }>) => {
+    saveVitalRecord: (
+      state,
+      action: PayloadAction<{ seniorId: string; vitals: VitalSigns }>
+    ) => {
       const { seniorId, vitals } = action.payload;
-      const senior = state.seniors.find(s => s.id === seniorId);
-      
+      const senior = state.seniors.find((s) => s.id === seniorId);
+
       if (senior) {
         // 최신 바이탈 업데이트
         senior.latestVitals = vitals;
@@ -364,12 +393,15 @@ const vitalsSlice = createSlice({
         if (senior.vitalHistory.length > 100) {
           senior.vitalHistory = senior.vitalHistory.slice(0, 100);
         }
-        
+
         // 알림 생성 로직
         const newAlerts: VitalAlert[] = [];
-        
+
         // 혈압 체크
-        if (vitals.bloodPressureSystolic > 140 || vitals.bloodPressureDiastolic > 90) {
+        if (
+          vitals.bloodPressureSystolic > 140 ||
+          vitals.bloodPressureDiastolic > 90
+        ) {
           newAlerts.push({
             id: Date.now().toString(),
             seniorId,
@@ -381,7 +413,7 @@ const vitalsSlice = createSlice({
             acknowledged: false,
           });
         }
-        
+
         // 체온 체크
         if (vitals.temperature > 37.5) {
           newAlerts.push({
@@ -395,7 +427,7 @@ const vitalsSlice = createSlice({
             acknowledged: false,
           });
         }
-        
+
         // 심박수 체크
         if (vitals.heartRate > 100 || vitals.heartRate < 60) {
           newAlerts.push({
@@ -409,27 +441,29 @@ const vitalsSlice = createSlice({
             acknowledged: false,
           });
         }
-        
+
         senior.alerts.unshift(...newAlerts);
-        state.urgentAlerts.unshift(...newAlerts.filter(a => a.severity === 'high'));
+        state.urgentAlerts.unshift(
+          ...newAlerts.filter((a) => a.severity === 'high')
+        );
       }
-      
+
       state.isRecording = false;
       state.newVitals = {};
     },
     acknowledgeAlert: (state, action: PayloadAction<string>) => {
       const alertId = action.payload;
-      
+
       // 각 시니어의 알림에서 찾아서 acknowledged 상태 변경
-      state.seniors.forEach(senior => {
-        const alert = senior.alerts.find(a => a.id === alertId);
+      state.seniors.forEach((senior) => {
+        const alert = senior.alerts.find((a) => a.id === alertId);
         if (alert) {
           alert.acknowledged = true;
         }
       });
-      
+
       // urgentAlerts에서 제거
-      state.urgentAlerts = state.urgentAlerts.filter(a => a.id !== alertId);
+      state.urgentAlerts = state.urgentAlerts.filter((a) => a.id !== alertId);
     },
     cancelRecording: (state) => {
       state.isRecording = false;
@@ -458,8 +492,12 @@ const vitalsSlice = createSlice({
         state.isLoading = false;
         state.vitalStatusInfo = action.payload;
         state.seniors = transformVitalStatusToSeniors(action.payload);
-        state.urgentAlerts = state.seniors.flatMap(s => 
-          s.alerts.filter(a => !a.acknowledged && (a.severity === 'high' || a.severity === 'critical'))
+        state.urgentAlerts = state.seniors.flatMap((s) =>
+          s.alerts.filter(
+            (a) =>
+              !a.acknowledged &&
+              (a.severity === 'high' || a.severity === 'critical')
+          )
         );
 
         console.log('📋 Store 업데이트 완료:', {
@@ -472,7 +510,8 @@ const vitalsSlice = createSlice({
         console.error('오류 정보:', action.error);
 
         state.isLoading = false;
-        state.error = action.error.message || '바이탈 현황 조회에 실패했습니다.';
+        state.error =
+          action.error.message || '바이탈 현황 조회에 실패했습니다.';
       })
 
       // createVitalRecord
@@ -498,7 +537,8 @@ const vitalsSlice = createSlice({
         console.error('오류 정보:', action.error);
 
         state.isLoading = false;
-        state.error = action.error.message || '바이탈 기록 생성에 실패했습니다.';
+        state.error =
+          action.error.message || '바이탈 기록 생성에 실패했습니다.';
       })
 
       // createAutoVitalRecord
@@ -513,33 +553,41 @@ const vitalsSlice = createSlice({
       .addCase(createAutoVitalRecord.rejected, (state, action) => {
         console.error('❌ createAutoVitalRecord.rejected - 자동 기록 실패');
         console.error('오류 정보:', action.error);
-        state.error = action.error.message || '자동 바이탈 기록에 실패했습니다.';
+        state.error =
+          action.error.message || '자동 바이탈 기록에 실패했습니다.';
       })
 
       // fetchResidentVitalHistory
       .addCase(fetchResidentVitalHistory.pending, (state) => {
-        console.log('🔄 fetchResidentVitalHistory.pending - 히스토리 조회 시작');
+        console.log(
+          '🔄 fetchResidentVitalHistory.pending - 히스토리 조회 시작'
+        );
         state.isLoading = true;
       })
       .addCase(fetchResidentVitalHistory.fulfilled, (state, action) => {
-        console.log('✅ fetchResidentVitalHistory.fulfilled - 히스토리 조회 성공');
+        console.log(
+          '✅ fetchResidentVitalHistory.fulfilled - 히스토리 조회 성공'
+        );
         console.log('📊 받은 데이터:', action.payload);
 
         state.isLoading = false;
         const { residentId, history } = action.payload;
-        
+
         // 해당 거주자의 히스토리 업데이트
-        const senior = state.seniors.find(s => s.id === residentId);
+        const senior = state.seniors.find((s) => s.id === residentId);
         if (senior) {
           senior.vitalHistory = history.map(transformApiVitalToRedux);
         }
       })
       .addCase(fetchResidentVitalHistory.rejected, (state, action) => {
-        console.error('❌ fetchResidentVitalHistory.rejected - 히스토리 조회 실패');
+        console.error(
+          '❌ fetchResidentVitalHistory.rejected - 히스토리 조회 실패'
+        );
         console.error('오류 정보:', action.error);
 
         state.isLoading = false;
-        state.error = action.error.message || '바이탈 히스토리 조회에 실패했습니다.';
+        state.error =
+          action.error.message || '바이탈 히스토리 조회에 실패했습니다.';
       })
 
       // updateVitalRecord
@@ -554,7 +602,8 @@ const vitalsSlice = createSlice({
       .addCase(updateVitalRecord.rejected, (state, action) => {
         console.error('❌ updateVitalRecord.rejected - 기록 업데이트 실패');
         console.error('오류 정보:', action.error);
-        state.error = action.error.message || '바이탈 기록 업데이트에 실패했습니다.';
+        state.error =
+          action.error.message || '바이탈 기록 업데이트에 실패했습니다.';
       })
 
       // createSampleVitalData
@@ -564,17 +613,22 @@ const vitalsSlice = createSlice({
         state.error = null;
       })
       .addCase(createSampleVitalData.fulfilled, (state, action) => {
-        console.log('✅ createSampleVitalData.fulfilled - 샘플 데이터 생성 성공');
+        console.log(
+          '✅ createSampleVitalData.fulfilled - 샘플 데이터 생성 성공'
+        );
         console.log('📊 생성된 샘플 데이터:', action.payload.length);
         state.isLoading = false;
         state.error = null;
         // 샘플 데이터 생성 후 다시 조회하도록 유도
       })
       .addCase(createSampleVitalData.rejected, (state, action) => {
-        console.error('❌ createSampleVitalData.rejected - 샘플 데이터 생성 실패');
+        console.error(
+          '❌ createSampleVitalData.rejected - 샘플 데이터 생성 실패'
+        );
         console.error('오류 정보:', action.error);
         state.isLoading = false;
-        state.error = action.error.message || '샘플 바이탈 데이터 생성에 실패했습니다.';
+        state.error =
+          action.error.message || '샘플 바이탈 데이터 생성에 실패했습니다.';
       })
 
       // deleteVitalRecord
@@ -588,12 +642,12 @@ const vitalsSlice = createSlice({
         console.log('📊 삭제된 데이터:', action.payload);
         state.isLoading = false;
         state.error = null;
-        
+
         // 삭제된 기록을 seniors의 vitalHistory에서 제거
         const deletedRecordId = action.payload.recordId;
-        state.seniors.forEach(senior => {
+        state.seniors.forEach((senior) => {
           senior.vitalHistory = senior.vitalHistory.filter(
-            vital => vital.timestamp !== deletedRecordId // 임시로 timestamp로 비교
+            (vital) => vital.timestamp !== deletedRecordId // 임시로 timestamp로 비교
           );
         });
       })
@@ -601,7 +655,8 @@ const vitalsSlice = createSlice({
         console.error('❌ deleteVitalRecord.rejected - 기록 삭제 실패');
         console.error('오류 정보:', action.error);
         state.isLoading = false;
-        state.error = action.error.message || '바이탈 기록 삭제에 실패했습니다.';
+        state.error =
+          action.error.message || '바이탈 기록 삭제에 실패했습니다.';
       })
 
       // deleteMultipleVitalRecords
@@ -615,20 +670,23 @@ const vitalsSlice = createSlice({
         console.log('📊 삭제된 데이터:', action.payload);
         state.isLoading = false;
         state.error = null;
-        
+
         // 삭제된 기록들을 seniors의 vitalHistory에서 제거
         const deletedRecordIds = action.payload.recordIds;
-        state.seniors.forEach(senior => {
+        state.seniors.forEach((senior) => {
           senior.vitalHistory = senior.vitalHistory.filter(
-            vital => !deletedRecordIds.includes(vital.timestamp) // 임시로 timestamp로 비교
+            (vital) => !deletedRecordIds.includes(vital.timestamp) // 임시로 timestamp로 비교
           );
         });
       })
       .addCase(deleteMultipleVitalRecords.rejected, (state, action) => {
-        console.error('❌ deleteMultipleVitalRecords.rejected - 일괄 삭제 실패');
+        console.error(
+          '❌ deleteMultipleVitalRecords.rejected - 일괄 삭제 실패'
+        );
         console.error('오류 정보:', action.error);
         state.isLoading = false;
-        state.error = action.error.message || '바이탈 기록 일괄 삭제에 실패했습니다.';
+        state.error =
+          action.error.message || '바이탈 기록 일괄 삭제에 실패했습니다.';
       });
   },
 });

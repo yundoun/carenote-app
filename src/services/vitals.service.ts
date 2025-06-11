@@ -143,7 +143,7 @@ export class VitalsService {
       // 3. 최근 30일 바이탈 히스토리 조회 (거주자별 최대 10건)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       const { data: historyRecords, error: historyError } = await supabase
         .from('vital_records')
         .select(
@@ -183,8 +183,10 @@ export class VitalsService {
           .slice(0, 10);
 
         // 시간순으로 정렬 (최신순)
-        residentVitals.sort((a: any, b: any) => 
-          new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+        residentVitals.sort(
+          (a: any, b: any) =>
+            new Date(b.measured_at).getTime() -
+            new Date(a.measured_at).getTime()
         );
 
         // 시간대별 체크 현황 계산 (가장 최근 기록 우선)
@@ -261,6 +263,7 @@ export class VitalsService {
                 heart_rate: lastVital.heart_rate || undefined,
                 temperature: lastVital.temperature || undefined,
                 measured_at: lastVital.measured_at,
+                notes: lastVital.notes || undefined,
               }
             : undefined,
           vital_history: residentHistory,

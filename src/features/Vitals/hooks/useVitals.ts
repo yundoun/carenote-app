@@ -138,7 +138,7 @@ export function useVitals() {
         // Redux 상태의 newVitals를 API 호출용 데이터로 변환
         const vitalData = {
           resident_id: seniorId,
-          measured_by: currentUser.id || 'system', // 사용자 ID 사용
+          measurer_id: currentUser?.id || '8debc4ef-aa7a-4ddd-ae6b-4982fe89dc7b', // 기본 staff ID 사용
           measured_at: new Date().toISOString(),
           systolic_bp: vitals.newVitals.bloodPressureSystolic,
           diastolic_bp: vitals.newVitals.bloodPressureDiastolic,

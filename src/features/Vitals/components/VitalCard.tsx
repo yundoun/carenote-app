@@ -82,14 +82,17 @@ export const VitalCard = ({
 
   // 다음 체크 시간까지 남은 시간 계산
   const getTimeUntilNextCheck = () => {
-    if (!senior.nextScheduledCheck || senior.nextScheduledCheck.includes('NaN')) {
+    if (
+      !senior.nextScheduledCheck ||
+      senior.nextScheduledCheck.includes('NaN')
+    ) {
       return '미정';
     }
 
     try {
       const now = new Date();
       const [hour, minute] = senior.nextScheduledCheck.split(':').map(Number);
-      
+
       if (isNaN(hour) || isNaN(minute)) {
         return '미정';
       }
@@ -122,14 +125,14 @@ export const VitalCard = ({
 
     try {
       const date = new Date(timestamp);
-      
+
       if (isNaN(date.getTime())) {
         return '잘못된 시간 정보';
       }
 
       const now = new Date();
       const diffMs = now.getTime() - date.getTime();
-      
+
       if (diffMs < 0) {
         return '방금 전';
       }
@@ -206,78 +209,92 @@ export const VitalCard = ({
         </div>
 
         {senior.latestVitals ? (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-red-500" />
-              <div>
-                <p className="text-xs text-gray-500">혈압</p>
-                <Badge
-                  variant="outline"
-                  className={getStatusColor(
-                    getVitalStatus(senior.latestVitals.bloodPressureSystolic, {
-                      min: 90,
-                      max: 140,
-                    })
-                  )}>
-                  {senior.latestVitals.bloodPressureSystolic}/
-                  {senior.latestVitals.bloodPressureDiastolic}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-blue-500" />
-              <div>
-                <p className="text-xs text-gray-500">맥박</p>
-                <Badge
-                  variant="outline"
-                  className={getStatusColor(
-                    getVitalStatus(senior.latestVitals.heartRate, {
-                      min: 60,
-                      max: 100,
-                    })
-                  )}>
-                  {senior.latestVitals.heartRate}bpm
-                </Badge>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Thermometer className="h-4 w-4 text-orange-500" />
-              <div>
-                <p className="text-xs text-gray-500">체온</p>
-                <Badge
-                  variant="outline"
-                  className={getStatusColor(
-                    getVitalStatus(senior.latestVitals.temperature, {
-                      min: 35.5,
-                      max: 37.5,
-                    })
-                  )}>
-                  {senior.latestVitals.temperature}°C
-                </Badge>
-              </div>
-            </div>
-
-            {senior.latestVitals.bloodSugar && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2">
-                <Droplets className="h-4 w-4 text-purple-500" />
+                <Heart className="h-4 w-4 text-red-500" />
                 <div>
-                  <p className="text-xs text-gray-500">혈당</p>
+                  <p className="text-xs text-gray-500">혈압</p>
                   <Badge
                     variant="outline"
                     className={getStatusColor(
-                      getVitalStatus(senior.latestVitals.bloodSugar, {
-                        min: 80,
-                        max: 140,
-                      })
+                      getVitalStatus(
+                        senior.latestVitals.bloodPressureSystolic,
+                        {
+                          min: 90,
+                          max: 140,
+                        }
+                      )
                     )}>
-                    {senior.latestVitals.bloodSugar}mg/dL
+                    {senior.latestVitals.bloodPressureSystolic}/
+                    {senior.latestVitals.bloodPressureDiastolic}
                   </Badge>
                 </div>
               </div>
+
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-blue-500" />
+                <div>
+                  <p className="text-xs text-gray-500">맥박</p>
+                  <Badge
+                    variant="outline"
+                    className={getStatusColor(
+                      getVitalStatus(senior.latestVitals.heartRate, {
+                        min: 60,
+                        max: 100,
+                      })
+                    )}>
+                    {senior.latestVitals.heartRate}bpm
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Thermometer className="h-4 w-4 text-orange-500" />
+                <div>
+                  <p className="text-xs text-gray-500">체온</p>
+                  <Badge
+                    variant="outline"
+                    className={getStatusColor(
+                      getVitalStatus(senior.latestVitals.temperature, {
+                        min: 35.5,
+                        max: 37.5,
+                      })
+                    )}>
+                    {senior.latestVitals.temperature}°C
+                  </Badge>
+                </div>
+              </div>
+
+              {senior.latestVitals.bloodSugar && (
+                <div className="flex items-center gap-2">
+                  <Droplets className="h-4 w-4 text-purple-500" />
+                  <div>
+                    <p className="text-xs text-gray-500">혈당</p>
+                    <Badge
+                      variant="outline"
+                      className={getStatusColor(
+                        getVitalStatus(senior.latestVitals.bloodSugar, {
+                          min: 80,
+                          max: 140,
+                        })
+                      )}>
+                      {senior.latestVitals.bloodSugar}mg/dL
+                    </Badge>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {senior.latestVitals.notes && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-md border-l-4 border-blue-200">
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold text-blue-700">💬 메모:</span>{' '}
+                  {senior.latestVitals.notes}
+                </p>
+              </div>
             )}
-          </div>
+          </>
         ) : (
           <p className="text-gray-500 text-center py-4">
             측정된 바이탈 사인이 없습니다.
