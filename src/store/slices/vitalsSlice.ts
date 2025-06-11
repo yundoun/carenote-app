@@ -179,7 +179,7 @@ function transformVitalStatusToSeniors(statusInfo: VitalStatusInfo): Senior[] {
           heartRate: lastVitals.heart_rate || 0,
           temperature: lastVitals.temperature || 0,
           timestamp: lastVitals.measured_at || '',
-          recordedBy: '시스템',
+          recordedBy: '간병인',
         }
       : null;
 
@@ -239,14 +239,28 @@ function transformVitalStatusToSeniors(statusInfo: VitalStatusInfo): Senior[] {
       nextCheck.setHours(8, 0, 0, 0);
     }
 
+    // 바이탈 히스토리 변환
+    const vitalHistory: VitalSigns[] = (resident.vital_history || []).map((record: any) => ({
+      bloodPressureSystolic: record.systolic_bp || 0,
+      bloodPressureDiastolic: record.diastolic_bp || 0,
+      heartRate: record.heart_rate || 0,
+      temperature: record.temperature || 0,
+      weight: record.weight,
+      bloodSugar: record.blood_sugar,
+      oxygenSaturation: record.blood_oxygen,
+      timestamp: record.measured_at,
+      notes: record.notes || undefined,
+      recordedBy: '간병인',
+    }));
+
     return {
       id: resident.id,
       name: resident.name,
-      age: 0, // API에서 age 정보가 없으므로 기본값
+      age: resident.age || 0, // API에서 age 정보 사용
       room: resident.room_number,
       conditions: [], // API에서 조건 정보가 없으므로 빈 배열
       latestVitals,
-      vitalHistory: [], // 별도로 조회 필요
+      vitalHistory,
       alerts,
       nextScheduledCheck: nextCheck.toLocaleTimeString('ko-KR', {
         hour: '2-digit',

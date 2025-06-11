@@ -16,7 +16,8 @@ export const VitalOverview = () => {
     updateVitalsInput,
     saveVitals,
     cancelVitalRecording,
-    isLoading
+    isLoading,
+    fetchVitalHistory
   } = useVitals();
 
   if (isLoading) {
@@ -60,6 +61,7 @@ export const VitalOverview = () => {
             saveVitals={saveVitals}
             cancelVitalRecording={cancelVitalRecording}
             isLoading={isLoading}
+            fetchVitalHistory={fetchVitalHistory}
           />
         ))
       )}

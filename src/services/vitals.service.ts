@@ -44,6 +44,7 @@ export interface VitalStatusInfo {
     id: string;
     name: string;
     room_number: string;
+    age?: number;
     vital_check_status: {
       morning: {
         checked: boolean;
@@ -67,6 +68,7 @@ export interface VitalStatusInfo {
       temperature?: number;
       measured_at?: string;
     };
+    vital_history?: VitalRecord[];
   }>;
   summary: {
     total_residents: number;
@@ -138,6 +140,26 @@ export class VitalsService {
         .gte('measured_at', startDateTime)
         .lte('measured_at', endDateTime);
 
+      // 3. 최근 30일 바이탈 히스토리 조회 (거주자별 최대 10건)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data: historyRecords, error: historyError } = await supabase
+        .from('vital_records')
+        .select(
+          `
+          *,
+          resident:residents(id, name, room_number)
+        `
+        )
+        .gte('measured_at', thirtyDaysAgo.toISOString())
+        .order('measured_at', { ascending: false })
+        .limit(1000); // 전체 제한
+
+      if (historyError) {
+        console.warn('⚠️ 바이탈 히스토리 조회 오류:', historyError);
+      }
+
       if (vitalsError) {
         console.warn(
           '⚠️ 바이탈 기록 조회 오류 (테이블이 없을 수 있음):',
@@ -147,14 +169,25 @@ export class VitalsService {
       }
 
       console.log('📊 오늘의 바이탈 기록:', vitalRecords?.length || 0);
+      console.log('📊 히스토리 바이탈 기록:', historyRecords?.length || 0);
 
-      // 3. 거주자별 바이탈 체크 현황 계산
+      // 4. 거주자별 바이탈 체크 현황 계산
       const residentsWithStatus = (residents || []).map((resident) => {
         const residentVitals = (vitalRecords || []).filter(
           (record: any) => record.resident_id === resident.id
         );
 
-        // 시간대별 체크 현황 계산
+        // 해당 거주자의 히스토리 기록 (최근 10건)
+        const residentHistory = (historyRecords || [])
+          .filter((record: any) => record.resident_id === resident.id)
+          .slice(0, 10);
+
+        // 시간순으로 정렬 (최신순)
+        residentVitals.sort((a: any, b: any) => 
+          new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+        );
+
+        // 시간대별 체크 현황 계산 (가장 최근 기록 우선)
         const morningVital = residentVitals.find((record: any) => {
           const hour = new Date(record.measured_at).getHours();
           return hour >= 6 && hour < 12;
@@ -170,13 +203,14 @@ export class VitalsService {
           return hour >= 18 || hour < 6;
         });
 
-        // 최근 바이탈 사인
-        const lastVital = residentVitals[residentVitals.length - 1];
+        // 최근 바이탈 사인 (가장 최신 기록)
+        const lastVital = residentVitals[0];
 
         return {
           id: resident.id,
           name: resident.name,
           room_number: resident.room_number || '',
+          age: resident.age,
           vital_check_status: {
             morning: {
               checked: !!morningVital,
@@ -229,6 +263,7 @@ export class VitalsService {
                 measured_at: lastVital.measured_at,
               }
             : undefined,
+          vital_history: residentHistory,
         };
       });
 
