@@ -37,9 +37,9 @@ export const useSchedule = () => {
     console.log('🔄 useSchedule 초기화 - 오늘의 근무 정보 조회 시작');
     console.log('👤 현재 사용자:', { currentUser, caregiverId });
 
-    // 테스트를 위해 실제 데이터가 있는 날짜 사용
-    const testDate = '2025-05-29'; // 실제 데이터가 있는 날짜
-    dispatch(fetchTodayWorkInfo({ caregiverId, date: testDate }));
+    // 오늘 날짜로 동적 조회
+    const today = new Date().toISOString().split('T')[0];
+    dispatch(fetchTodayWorkInfo({ caregiverId, date: today }));
   }, [dispatch, caregiverId]);
 
   // 주간 스케줄 조회
