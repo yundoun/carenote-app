@@ -335,7 +335,11 @@ const scheduleSlice = createSlice({
 
         return {
           id: schedule.id,
-          title: schedule.title,
+          title: schedule.resident?.name
+            ? `${schedule.resident.name} (${
+                schedule.resident.room_number || ''
+              }) - ${schedule.title}`
+            : schedule.title,
           description: schedule.description,
           // 서버 상태가 정답 - 항상 서버 데이터 사용
           completed: schedule.status === 'COMPLETED',
@@ -436,7 +440,11 @@ const scheduleSlice = createSlice({
 
               return {
                 id: schedule.id,
-                title: schedule.title,
+                title: schedule.resident?.name
+                  ? `${schedule.resident.name} (${
+                      schedule.resident.room_number || ''
+                    }) - ${schedule.title}`
+                  : schedule.title,
                 description: schedule.description,
                 // 서버 상태가 정답 - 항상 서버 데이터 사용
                 completed: schedule.status === 'COMPLETED',
