@@ -1,7 +1,7 @@
 'use client';
 
 import { Menu } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { systemMenuItems, getIcon, useNavigation } from '@/routes';
 
@@ -28,22 +28,25 @@ export function MenuDrawer({ isOpen, onOpenChange }: MenuDrawerProps) {
         </button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+        <SheetHeader>
+          <SheetTitle>케어노트 메뉴</SheetTitle>
+          <SheetDescription>
+            앱의 주요 기능과 설정에 접근할 수 있습니다.
+          </SheetDescription>
+        </SheetHeader>
         <div className="py-6">
-          <h2 className="text-xl font-bold mb-6">케어노트 메뉴</h2>
-          <div>
-            <nav className="space-y-2">
-              {systemMenuItems.map((item, index) => (
-                <Button
-                  key={index}
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleMenuClick(item.path)}>
-                  {getIcon(item.iconName)}
-                  <span className="ml-3">{item.label}</span>
-                </Button>
-              ))}
-            </nav>
-          </div>
+          <nav className="space-y-2">
+            {systemMenuItems.map((item, index) => (
+              <Button
+                key={index}
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => handleMenuClick(item.path)}>
+                {getIcon(item.iconName)}
+                <span className="ml-3">{item.label}</span>
+              </Button>
+            ))}
+          </nav>
         </div>
       </SheetContent>
     </Sheet>

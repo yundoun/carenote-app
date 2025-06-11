@@ -34,18 +34,6 @@ export const systemMenuItems: MenuItem[] = [
     path: ROUTES.SETTINGS,
     description: '앱 설정 관리',
   },
-  {
-    iconName: 'HelpCircle',
-    label: '도움말',
-    path: ROUTES.HELP,
-    description: '사용법 안내',
-  },
-  {
-    iconName: 'LogOut',
-    label: '로그아웃',
-    path: ROUTES.LOGOUT,
-    description: '앱 종료',
-  },
 ];
 
 // 하단 네비게이션 메뉴 아이템들
