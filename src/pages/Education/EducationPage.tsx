@@ -129,9 +129,9 @@ export default function EducationPage() {
   // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
     loadCategories();
-    loadMaterials({ userId });
-    loadRecommendedMaterials(userId, 5);
-    loadRecentMaterials(userId, 10);
+    loadMaterials();
+    loadRecommendedMaterials(5);
+    loadRecentMaterials(10);
   }, [
     loadCategories,
     loadMaterials,
@@ -151,7 +151,7 @@ export default function EducationPage() {
     if (selectedCategory) {
       // 카테고리가 선택된 경우 해당 카테고리의 모든 자료를 표시
       const categoryMaterials = allMaterials.filter((material) => {
-        const categoryName = material.category_name || material.category;
+        const categoryName = (material as any).category_name || material.category;
         return categoryName === selectedCategory;
       });
 
@@ -167,7 +167,7 @@ export default function EducationPage() {
 
     if (selectedCategory) {
       filtered = filtered.filter((material) => {
-        const categoryName = material.category_name || material.category;
+        const categoryName = (material as any).category_name || material.category;
         return categoryName === selectedCategory;
       });
     }
@@ -188,9 +188,9 @@ export default function EducationPage() {
     setSearchQuery(query);
     // 검색어가 변경되면 필터링된 결과를 다시 로드
     if (query.trim()) {
-      loadMaterials({ userId, searchQuery: query });
+      loadMaterials({ searchQuery: query });
     } else {
-      loadMaterials({ userId });
+      loadMaterials();
     }
   };
 
@@ -211,7 +211,7 @@ export default function EducationPage() {
       console.log('카테고리 선택:', categoryName);
       // 해당 카테고리를 가진 자료들 확인
       const materialsWithCategory = allMaterials.filter((m) => {
-        const materialCategory = m.category_name || m.category;
+        const materialCategory = (m as any).category_name || m.category;
         return materialCategory === categoryName;
       });
       console.log(
@@ -222,7 +222,7 @@ export default function EducationPage() {
         '해당 자료들:',
         materialsWithCategory.map((m) => ({
           title: m.title,
-          category: m.category_name || m.category,
+          category: (m as any).category_name || m.category,
         }))
       );
     }
