@@ -1,17 +1,11 @@
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
 import {
   ResidentSearch,
   UrgentCasesAlert,
   ResidentsTabs,
-  ResidentDetailView,
+  ResidentDetailDialog,
   useResidents,
   ResidentDetail,
 } from '@/features/residents';
@@ -96,21 +90,11 @@ export default function ResidentsPage() {
         onResidentClick={handleResidentClick}
       />
 
-      {/* Resident Detail Dialog */}
-      <Dialog
+      <ResidentDetailDialog
+        resident={selectedResident}
         open={!!selectedResident}
-        onOpenChange={() => setSelectedResident(null)}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedResident?.name} ({selectedResident?.age}세)
-            </DialogTitle>
-          </DialogHeader>
-          {selectedResident && (
-            <ResidentDetailView resident={selectedResident} />
-          )}
-        </DialogContent>
-      </Dialog>
+        onOpenChange={() => setSelectedResident(null)}
+      />
     </div>
   );
 }

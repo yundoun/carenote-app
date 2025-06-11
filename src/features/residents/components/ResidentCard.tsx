@@ -35,12 +35,6 @@ export function ResidentCard({
                   {resident.conditions.join(', ')}
                 </p>
               </div>
-              {resident.vitalSigns && (
-                <div className="text-right text-xs text-gray-500">
-                  <p>혈압: {resident.vitalSigns.bloodPressure}</p>
-                  <p>체온: {resident.vitalSigns.temperature}</p>
-                </div>
-              )}
             </div>
 
             <div className="flex flex-wrap gap-2 mt-2">

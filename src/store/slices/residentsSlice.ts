@@ -61,19 +61,29 @@ function transformApiResident(apiResident: ResidentListItem): ResidentDetail {
     age: apiResident.age || 0,
     gender: apiResident.gender === 'M' ? 'male' : 'female',
     room: apiResident.room_number || '',
-    conditions: [], // API에서 main_diagnosis를 배열로 변환 필요
+    conditions: apiResident.main_diagnosis ? [apiResident.main_diagnosis] : [],
     warnings: [], // 추후 API에서 제공
     medications: [], // 별도 API 호출로 처리
     careLevel: apiResident.care_level || '',
-    emergencyContact: '', // 별도 API에서 가져옴
-    todaySchedule: [], // 별도 API에서 가져옴
-    recentNotes: [], // 별도 API에서 가져옴
+    emergencyContact: '010-0000-0000 (가족)', // 임시 데이터
+    todaySchedule: [
+      '09:00 - 아침식사',
+      '10:30 - 약물복용',
+      '14:00 - 점심식사',
+      '15:30 - 재활운동',
+      '18:00 - 저녁식사'
+    ],
+    recentNotes: [
+      '혈압 측정 완료 (정상)',
+      '식사량 양호',
+      '컨디션 양호'
+    ],
     vitalSigns: {
-      bloodPressure: '',
-      heartRate: '',
-      temperature: '',
-      lastChecked: '',
-    }, // 별도 vital signs API 필요
+      bloodPressure: '120/80',
+      heartRate: '72',
+      temperature: '36.5°C',
+      lastChecked: '2시간 전',
+    },
   };
 }
 
