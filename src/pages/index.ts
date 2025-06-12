@@ -1,0 +1,10 @@
+export * from './Login';
+export { default as HomePage } from './Home/HomePage';
+export { default as SchedulePage } from './Schedule/SchedulePage';
+export { default as VitalPage } from './VitalPage/VitalPage';
+export { default as NursingPage } from './Nursing/NursingPage';
+export { default as MyPage } from './My/MyPage';
+export { default as ResidentsPage } from './Residents/ResidentsPage';
+export { default as EducationPage } from './Education/EducationPage';
+export { default as AnnouncementsPage } from './Announcements/AnnouncementsPage';
+export { default as SettingsPage } from './Settings/SettingsPage';
