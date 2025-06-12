@@ -49,7 +49,7 @@ export class ScheduleService {
         date,
       });
 
-      const targetDate = date || new Date().toISOString().split('T')[0];
+      const targetDate = date || '2025-06-11';
 
       // 오늘의 근무지 정보 조회
       const { data: workLocation, error: workError } = await supabase

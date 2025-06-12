@@ -78,7 +78,7 @@ export function AddRecordForm({
   const [fromPosition, setFromPosition] = useState('');
   const [toPosition, setToPosition] = useState('');
   const [skinCondition, setSkinCondition] = useState<
-    'NORMAL' | 'REDNESS' | 'WOUND' | 'PRESSURE_SORE'
+    'NORMAL' | 'REDNESS' | 'WOUND' | 'ULCER'
   >('NORMAL');
   const [medicationStatus, setMedicationStatus] = useState<
     'SCHEDULED' | 'COMPLETED' | 'MISSED' | 'REFUSED' | 'PARTIAL'
@@ -347,7 +347,7 @@ export function AddRecordForm({
                     <SelectItem value="NORMAL">정상</SelectItem>
                     <SelectItem value="REDNESS">발적</SelectItem>
                     <SelectItem value="WOUND">상처</SelectItem>
-                    <SelectItem value="PRESSURE_SORE">욕창</SelectItem>
+                    <SelectItem value="ULCER">욕창</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

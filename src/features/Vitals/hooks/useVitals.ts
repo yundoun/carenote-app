@@ -233,14 +233,13 @@ export function useVitals() {
       try {
         console.log('📊 바이탈 히스토리 조회 중...', residentId);
 
-        const endDate = new Date().toISOString().split('T')[0];
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30); // 최근 30일
+        const endDate = '2025-06-11';
+        const startDate = '2025-05-12'; // 30일 전 날짜
 
         await dispatch(
           fetchResidentVitalHistory({
             residentId,
-            startDate: startDate.toISOString().split('T')[0],
+            startDate,
             endDate,
             limit: limit || 50,
           })

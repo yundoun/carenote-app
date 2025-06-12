@@ -98,8 +98,8 @@ export class HomeService {
         throw userError;
       }
 
-      // 오늘의 근무 정보 조회
-      const today = new Date().toISOString().split('T')[0];
+      // 고정 날짜로 조회 (2025-06-11)
+      const today = '2025-06-11';
       const { data: workLocation, error: workError } = await supabase
         .from('work_locations')
         .select('unit, unit_name, resident_count')
@@ -157,7 +157,7 @@ export class HomeService {
     userId: string
   ): Promise<ApiResponse<HomeTodayProgress>> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = '2025-06-11';
 
       // 오늘의 케어 스케줄 진행 상황 (근무표 페이지와 동일한 데이터 사용)
       const { data: schedules, error: scheduleError } = await supabase
@@ -255,7 +255,7 @@ export class HomeService {
     userId: string
   ): Promise<ApiResponse<HomeScheduleItem[]>> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = '2025-06-11';
 
       // 오늘의 케어 스케줄 조회 (근무표 페이지와 동일한 쿼리)
       const { data: schedules, error: scheduleError } = await supabase
@@ -435,7 +435,7 @@ export class HomeService {
     userId: string
   ): Promise<ApiResponse<HomeAssignedResident[]>> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = '2025-06-11';
 
       // 오늘 스케줄된 거주자들 조회 (중복 제거)
       const { data, error } = await supabase
@@ -505,7 +505,7 @@ export class HomeService {
     userId: string
   ): Promise<ApiResponse<HomeHandoverInfo[]>> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = '2025-06-11';
 
       const { data, error } = await supabase
         .from('handover_notes')

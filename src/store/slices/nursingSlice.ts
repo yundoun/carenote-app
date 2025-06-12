@@ -34,7 +34,7 @@ export interface PositionChangeRecord {
     | 'PRONE'
     | 'SITTING';
   toPosition: 'SUPINE' | 'LEFT_LATERAL' | 'RIGHT_LATERAL' | 'PRONE' | 'SITTING';
-  skinCondition: 'NORMAL' | 'REDNESS' | 'PRESSURE_SORE' | 'WOUND';
+  skinCondition: 'NORMAL' | 'REDNESS' | 'ULCER' | 'WOUND';
   notes?: string;
   recordedBy: string;
   recordedAt: string;
@@ -298,7 +298,7 @@ const initialState: NursingState = {
   appointments: [],
   nursingNotes: [],
   selectedResident: null,
-  selectedDate: new Date().toISOString().split('T')[0],
+  selectedDate: '2025-06-11',
   filterType: 'all',
   isRecording: false,
   currentRecord: null,

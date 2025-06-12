@@ -104,7 +104,7 @@ export class VitalsService {
     try {
       console.log('🔍 VitalsService.getVitalStatus 호출됨:', { unitId, date });
 
-      const targetDate = date || new Date().toISOString().split('T')[0];
+      const targetDate = date || '2025-06-11';
       const startDateTime = `${targetDate}T00:00:00.000Z`;
       const endDateTime = `${targetDate}T23:59:59.999Z`;
 

@@ -930,7 +930,7 @@ export class NursingService {
         throw error;
       }
 
-      console.log('✅ 간고 기록 생성 성공:', data);
+      console.log('✅ 간호 기록 생성 성공:', data);
 
       return {
         code: 'SUCCESS',
@@ -1014,7 +1014,7 @@ export class NursingService {
         date,
       });
 
-      const targetDate = date || new Date().toISOString().split('T')[0];
+      const targetDate = date || '2025-06-11';
 
       // 투약 기록 조회
       const { data: medicationRecords, error: medError } = await supabase
@@ -1137,7 +1137,7 @@ export class NursingService {
         endDate,
       });
 
-      const start = startDate || new Date().toISOString().split('T')[0];
+      const start = startDate || '2025-06-11';
       const end = endDate || start;
 
       // 투약 기록 조회
