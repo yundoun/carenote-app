@@ -11,7 +11,17 @@
       "mcp__supabase__get_anon_key",
       "mcp__supabase__execute_sql",
       "Bash(npm run build:check:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(ls:*)",
+      "Bash(npx cap sync:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx cap add:*)",
+      "Bash(find:*)",
+      "Bash(./gradlew:*)",
+      "Bash(java:*)",
+      "Bash(xcode-select:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(security find-identity:*)"
     ],
     "deny": []
   },
